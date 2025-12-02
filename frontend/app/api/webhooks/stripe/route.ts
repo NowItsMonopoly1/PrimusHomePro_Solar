@@ -3,11 +3,16 @@
 
 import { headers } from 'next/headers'
 import { NextResponse } from 'next/server'
-import { stripe } from '@/lib/billing/stripe'
+import { stripe, isStripeConfigured } from '@/lib/billing/stripe'
 import { prisma } from '@/lib/db/prisma'
 import type Stripe from 'stripe'
 
 export async function POST(req: Request) {
+  // Check if Stripe is configured
+  if (!isStripeConfigured()) {
+    return new NextResponse('Stripe not configured', { status: 503 })
+  }
+
   const body = await req.text()
   const headersList = await headers()
   const signature = headersList.get('Stripe-Signature')

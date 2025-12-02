@@ -2,6 +2,8 @@
 // Manage team members and roles
 // RBAC: Only ADMIN role can access this page
 
+export const dynamic = 'force-dynamic'
+
 import { redirect } from 'next/navigation'
 import { guardTeamPage } from '@/lib/auth/route-guards'
 import { getCurrentCompany, getTeamMembers } from '@/lib/auth/auth-service'

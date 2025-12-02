@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import { ClerkProvider } from '@clerk/nextjs'
 import './globals.css'
 
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: 'Primus Home Pro - AI-First Lead Generation',
   description: 'The invisible CRM. AI-powered lead generation for home service professionals.',

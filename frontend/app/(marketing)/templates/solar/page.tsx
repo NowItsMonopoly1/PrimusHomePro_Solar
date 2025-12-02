@@ -1,6 +1,8 @@
 // PRIMUS HOME PRO - Solar Landing Page Template
 // Lead capture with Google Solar API site analysis
 
+export const dynamic = 'force-dynamic'
+
 import { LeadCaptureSolar } from '@/components/forms/lead-capture-solar'
 
 export const metadata = {

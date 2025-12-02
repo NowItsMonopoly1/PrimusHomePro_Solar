@@ -2,6 +2,8 @@
 // Manage automation rules and triggers
 // RBAC: Only ADMIN role can access this page
 
+export const dynamic = 'force-dynamic'
+
 import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import { getAutomationsForUser } from '@/lib/data/automations'

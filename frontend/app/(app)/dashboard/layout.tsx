@@ -1,6 +1,8 @@
 // PRIMUS HOME PRO - Dashboard Layout
 // Protected layout for authenticated users
 
+export const dynamic = 'force-dynamic'
+
 import { UserButton } from '@clerk/nextjs'
 import Link from 'next/link'
 import { LayoutDashboard, Users, Inbox, Settings, Zap, CreditCard, HardHat } from 'lucide-react'

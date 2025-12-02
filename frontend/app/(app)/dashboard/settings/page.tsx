@@ -1,6 +1,8 @@
 // PRIMUS HOME PRO - Settings Page
 // User account and app configuration
 
+export const dynamic = 'force-dynamic'
+
 import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/db/prisma'

@@ -1,6 +1,8 @@
 // PRIMUS HOME PRO - Leads Dashboard Page
 // Command Center for lead management
 
+export const dynamic = 'force-dynamic'
+
 import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import { getLeadsForUser } from '@/lib/data/leads'

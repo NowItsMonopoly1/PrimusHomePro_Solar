@@ -1,6 +1,8 @@
 // PRIMUS HOME PRO - Inbox Page
 // Message center for lead communications
 
+export const dynamic = 'force-dynamic'
+
 import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/db/prisma'

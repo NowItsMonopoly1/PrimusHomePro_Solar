@@ -1,6 +1,8 @@
 // PRIMUS HOME PRO - Template 1 Demo Page
 // Simple hero form - high conversion
 
+export const dynamic = 'force-dynamic'
+
 import { LeadCaptureSimple } from '@/components/forms/lead-capture-simple'
 
 export default function TemplateSimplePage() {
