@@ -7,7 +7,7 @@ import { Loader2 } from 'lucide-react'
 
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'default' | 'destructive'
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'default' | 'destructive' | 'solar' | 'solar-outline'
   size?: 'sm' | 'md' | 'lg' | 'xl'
   isLoading?: boolean
   asChild?: boolean
@@ -18,11 +18,14 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     { className, variant = 'primary', size = 'md', isLoading, children, disabled, asChild, ...props },
     ref
   ) => {
-    const variants = {
+    const variants: Record<string, string> = {
       // Primary: Amber - High visibility CTA
       primary:
         'bg-solar-primary text-white hover:bg-solar-primary-dark mpa-shadow-sm hover:mpa-shadow transition-all duration-200',
       default:
+        'bg-solar-primary text-white hover:bg-solar-primary-dark mpa-shadow-sm hover:mpa-shadow transition-all duration-200',
+      // Solar: Same as primary for backwards compatibility
+      solar:
         'bg-solar-primary text-white hover:bg-solar-primary-dark mpa-shadow-sm hover:mpa-shadow transition-all duration-200',
       // Secondary: Deep Blue - Authority actions
       secondary:
@@ -30,6 +33,9 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       // Outline: Clean border style
       outline:
         'border border-solar-gray-300 bg-white text-solar-gray-700 hover:bg-solar-gray-50 hover:border-solar-gray-400 transition-all duration-200',
+      // Solar Outline: Amber border variant
+      'solar-outline':
+        'border-2 border-solar-primary bg-white text-solar-primary hover:bg-solar-primary/10 transition-all duration-200',
       // Ghost: Minimal, for navigation
       ghost: 
         'bg-transparent text-solar-gray-600 hover:bg-solar-gray-100 hover:text-solar-gray-900 transition-all duration-200',
