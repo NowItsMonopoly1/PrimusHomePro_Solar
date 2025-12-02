@@ -214,6 +214,23 @@ export function ProposalPresentation({
           roofAreaSqM={siteSurvey?.totalRoofAreaSqM}
         />
 
+        {/* 25-Year Savings Hero - The Closer */}
+        <div className="rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 p-8 text-center text-white shadow-2xl">
+          <p className="text-lg font-medium opacity-90 mb-2">Your Total 25-Year Savings</p>
+          <p className="text-5xl md:text-6xl font-extrabold tracking-tight">
+            ${Math.round(proposal.netSavings25Yr).toLocaleString()}
+          </p>
+          <p className="mt-3 text-emerald-100">
+            That's ${Math.round(proposal.year1Savings).toLocaleString()} saved in year one alone
+          </p>
+          {proposal.breakEvenYear && (
+            <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-2">
+              <CheckCircle2 className="h-5 w-5" />
+              <span className="font-semibold">Break-even in {proposal.breakEvenYear} years</span>
+            </div>
+          )}
+        </div>
+
         {/* Cost Summary */}
         <Card>
           <CardHeader>
@@ -300,8 +317,14 @@ export function ProposalPresentation({
             </div>
           </div>
 
-          {/* E-Signature */}
-          <ESignaturePad onSignatureChange={setSignature} />
+          {/* E-Signature with Visual Arrow */}
+          <div className="relative">
+            <div className="absolute -top-8 left-1/2 -translate-x-1/2 flex items-center gap-2 text-solar-primary font-bold animate-bounce">
+              <span>Sign Here</span>
+              <span className="text-2xl">👇</span>
+            </div>
+            <ESignaturePad onSignatureChange={setSignature} />
+          </div>
 
           {/* Error Display */}
           {error && (

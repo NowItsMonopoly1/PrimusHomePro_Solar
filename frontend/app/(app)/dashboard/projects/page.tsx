@@ -108,18 +108,32 @@ export default function ProjectsPage() {
                     </span>
                   </div>
 
-                  {/* Progress bar */}
-                  <div className="mb-2">
-                    <div className="flex justify-between text-sm text-gray-600 mb-1">
-                      <span>Progress</span>
-                      <span>{project.progress}%</span>
+                  {/* Progress Tracker - Domino's Style */}
+                  <div className="mb-3">
+                    <div className="flex justify-between text-sm text-gray-600 mb-2">
+                      <span className="font-medium">Installation Progress</span>
+                      <span className="font-bold text-solar-secondary">{project.progress}%</span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className="bg-blue-600 h-2 rounded-full transition-all"
-                        style={{ width: `${project.progress}%` }}
-                      />
+                    {/* Stage Steps Indicator */}
+                    <div className="relative">
+                      <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
+                        <div
+                          className="h-3 rounded-full transition-all duration-500 bg-gradient-to-r from-solar-success via-solar-success to-solar-success/70"
+                          style={{ width: `${project.progress}%` }}
+                        />
+                      </div>
+                      {/* Pulse indicator at current position */}
+                      {project.progress < 100 && (
+                        <div 
+                          className="absolute top-0 h-3 w-3 rounded-full bg-solar-success animate-pulse shadow-lg border-2 border-white"
+                          style={{ left: `calc(${project.progress}% - 6px)` }}
+                        />
+                      )}
                     </div>
+                    {/* Current Stage Label */}
+                    <p className="text-xs text-solar-gray-600 mt-1 font-medium">
+                      📍 {project.currentStage}
+                    </p>
                   </div>
 
                   {/* Milestones count */}

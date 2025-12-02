@@ -204,13 +204,15 @@ export function LeadDrawer({ lead, onClose }: LeadDrawerProps) {
                 const payload = event.payload as Record<string, unknown> | null
                 const eventIcon = getEventIcon(event.type, payload)
                 const eventText = getEventText(event.type, event.content, payload)
+                const isAI = isAIAction(event.type)
                 
                 return (
-                  <div key={event.id} className="relative">
-                    <div className={`absolute -left-[21px] top-1 flex h-5 w-5 items-center justify-center rounded-full text-[10px] ${getEventBgColor(event.type, payload)}`}>
+                  <div key={event.id} className={`relative ${isAI ? 'bg-solar-primary/5 -ml-2 pl-2 py-1 rounded-lg border-l-2 border-solar-primary' : ''}`}>
+                    <div className={`absolute -left-[21px] top-1 flex h-5 w-5 items-center justify-center rounded-full text-[10px] ${isAI ? 'bg-solar-primary text-white' : getEventBgColor(event.type, payload)}`}>
                       {eventIcon}
                     </div>
                     <p className="text-sm text-foreground pl-1">
+                      {isAI && <span className="text-solar-primary font-medium">AI: </span>}
                       {eventText}
                     </p>
                     <span className="text-[10px] text-muted-foreground pl-1">
@@ -256,6 +258,11 @@ export function LeadDrawer({ lead, onClose }: LeadDrawerProps) {
 }
 
 // Helper functions for timeline display
+// AI-powered actions get the ⚡ indicator to show automation value
+function isAIAction(type: string): boolean {
+  return ['EMAIL_SENT', 'SMS_SENT', 'AUTO_FOLLOWUP', 'AI_REPLY'].includes(type)
+}
+
 function getEventIcon(type: string, payload: Record<string, unknown> | null): string {
   const action = payload?.action as string | undefined
   
@@ -266,11 +273,13 @@ function getEventIcon(type: string, payload: Record<string, unknown> | null): st
   if (action === 'proposal_generated') return '📄'
   if (action === 'proposal_accepted') return '✍️'
   
+  // AI automation actions get lightning bolt
+  if (isAIAction(type)) return '⚡'
+  
   switch (type) {
     case 'STAGE_CHANGE': return '📊'
     case 'NOTE_ADDED': return '📝'
     case 'STATUS_UPDATE': return '🔄'
-    case 'EMAIL_SENT': return '📧'
     case 'CALL_LOGGED': return '📞'
     case 'SOLAR_ANALYSIS': return '☀️'
     default: return '•'

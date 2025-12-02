@@ -64,15 +64,25 @@ export function LeadsTable({ initialLeads }: LeadsTableProps) {
       header: 'Solar Status',
       accessorKey: 'siteSuitability',
       cell: ({ row }) => {
-        const lead = row.original as LeadWithMeta & { siteSuitability?: string; solarEnriched?: boolean }
+        const lead = row.original as LeadWithMeta & { 
+          siteSuitability?: string
+          solarEnriched?: boolean
+          siteSurvey?: { systemSizeKW?: number }
+        }
         if (!lead.solarEnriched) {
           return (
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-solar-gray-100 text-solar-gray-500 text-xs font-medium rounded-lg">
-              Pending Analysis
+              ⏳ Analyzing...
             </span>
           )
         }
-        return <SolarBadge suitability={lead.siteSuitability || 'NOT_VIABLE'} />
+        return (
+          <SolarBadge 
+            suitability={lead.siteSuitability || 'NOT_VIABLE'} 
+            showSystemSize={true}
+            systemSizeKW={lead.siteSurvey?.systemSizeKW}
+          />
+        )
       },
     },
     {
