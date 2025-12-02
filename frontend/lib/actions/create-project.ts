@@ -22,7 +22,12 @@ const MILESTONE_TRIGGERS: Record<string, string> = {
 };
 
 // Standard milestones for solar installation projects
-const STANDARD_MILESTONES = [
+const STANDARD_MILESTONES: Array<{
+  name: string;
+  category: string;
+  sortOrder: number;
+  description: string;
+}> = [
   { name: 'Site Survey Completed', category: 'ENGINEERING', sortOrder: 1, description: 'On-site measurement and shading analysis' },
   { name: 'Engineering Design Finalized', category: 'ENGINEERING', sortOrder: 2, description: 'System design and structural review' },
   { name: 'HOA Application Submitted', category: 'HOA', sortOrder: 3, description: 'Submit architectural change request to HOA' },
@@ -367,14 +372,14 @@ export async function getUserProjects() {
   });
 
   // Add progress calculation
-  return projects.map((project) => ({
+  return projects.map((project: typeof projects[number]) => ({
     ...project,
     lead: project.lead,
     progress: Math.round(
-      (project.milestones.filter((m) => m.isComplete).length / 
+      (project.milestones.filter((m: { isComplete: boolean }) => m.isComplete).length / 
        Math.max(project.milestones.length, 1)) * 100
     ),
-    completedMilestones: project.milestones.filter((m) => m.isComplete).length,
+    completedMilestones: project.milestones.filter((m: { isComplete: boolean }) => m.isComplete).length,
     totalMilestones: project.milestones.length,
   }));
 }
