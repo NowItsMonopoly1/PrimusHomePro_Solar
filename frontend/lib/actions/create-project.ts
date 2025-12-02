@@ -316,7 +316,7 @@ async function updateProjectStage(projectId: string): Promise<string> {
   }
 
   // Check if all milestones complete
-  const allComplete = project.milestones.every((m) => m.isComplete);
+  const allComplete = project.milestones.every((m: { isComplete: boolean }) => m.isComplete);
   const status = allComplete ? 'COMPLETED' : 'ACTIVE';
 
   await prisma.project.update({
