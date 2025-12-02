@@ -6,10 +6,18 @@
 import { useState, useTransition } from 'react'
 import { Sparkles, Send, RefreshCw, Mail, MessageSquare } from 'lucide-react'
 import { draftLeadReply, sendLeadReply } from '@/lib/actions/ai'
-import type { LeadWithMeta, AIChannel, AITone } from '@/types'
+import type { AIChannel, AITone } from '@/types'
+
+// Define lead type inline to avoid Prisma type issues
+interface AIActionPanelLead {
+  id: string;
+  name: string | null;
+  email: string | null;
+  phone: string | null;
+}
 
 interface AIActionPanelProps {
-  lead: LeadWithMeta
+  lead: AIActionPanelLead
 }
 
 export function AIActionPanel({ lead }: AIActionPanelProps) {

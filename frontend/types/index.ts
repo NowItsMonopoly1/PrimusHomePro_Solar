@@ -113,13 +113,42 @@ export interface LeadCaptureInput {
   metadata?: Record<string, unknown>
 }
 
-// CRM Types
-export interface LeadWithMeta extends Lead {
+// CRM Types - Define explicitly to avoid Prisma type issues on Vercel
+export interface LeadWithMeta {
+  id: string
+  userId: string
+  name: string | null
+  email: string | null
+  phone: string | null
+  address: string | null
+  source: string | null
+  stage: string
+  score: number | null
+  intent: string | null
+  sentiment: string | null
+  metadata: unknown
+  createdAt: Date
+  updatedAt: Date
+  // Extended fields
   lastEventAt: Date | null
   lastIntent: string | null
   lastScore: number | null
   lastSentiment: string | null
-  events: LeadEvent[]
+  events: Array<{
+    id: string
+    type: string
+    content: string | null
+    createdAt: Date
+    metadata: unknown
+    payload: unknown
+    leadId: string
+  }>
+  project?: { id: string } | null
+  // Solar fields
+  solarEnriched?: boolean | null
+  siteSuitability?: string | null
+  estimatedSavings?: number | null
+  solarEnrichedAt?: Date | null
 }
 
 // AI Reply Types
