@@ -35,7 +35,7 @@ export async function getLeadsForUser(userId: string): Promise<LeadWithMeta[]> {
     orderBy: { createdAt: 'desc' },
   })
 
-  return leads.map((lead) => {
+  return leads.map((lead: typeof leads[number]) => {
     const lastEvent = lead.events[0]
     const meta = lastEvent?.metadata as Record<string, unknown> | undefined
 
