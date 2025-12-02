@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic'
 import { UserButton } from '@clerk/nextjs'
 import Link from 'next/link'
 import { LayoutDashboard, Users, Inbox, Settings, Zap, CreditCard, HardHat, Sun, Bell, Search } from 'lucide-react'
+import { MobileBottomTabs } from '@/components/navigation/mobile-bottom-tabs'
 
 export default function DashboardLayout({
   children,
@@ -104,14 +105,7 @@ export default function DashboardLayout({
         <main className="bg-solar-bg min-h-screen pb-20 lg:pb-0">{children}</main>
         
         {/* Mobile Bottom Tab Bar - Road Warrior Navigation */}
-        <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 shadow-lg">
-          <div className="grid grid-cols-4 h-16">
-            <MobileTabLink href="/dashboard" icon={<LayoutDashboard />} label="Dashboard" />
-            <MobileTabLink href="/dashboard/map" icon={<Sun />} label="Map" />
-            <MobileTabLink href="/dashboard/leads" icon={<Users />} label="Leads" />
-            <MobileTabLink href="/dashboard/settings" icon={<Settings />} label="Settings" />
-          </div>
-        </nav>
+        <MobileBottomTabs />
       </div>
     </div>
   )
@@ -126,36 +120,6 @@ function NavLink({ href, icon, label }: { href: string; icon: React.ReactNode; l
     >
       <span className="w-5 h-5 opacity-70 group-hover:opacity-100 transition-opacity">{icon}</span>
       {label}
-    </Link>
-  )
-}
-
-// Mobile Bottom Tab Component - One-Handed Operation
-'use client'
-import { usePathname } from 'next/navigation'
-
-function MobileTabLink({ href, icon, label }: { href: string; icon: React.ReactNode; label: string }) {
-  const pathname = usePathname()
-  const isActive = pathname === href || (href !== '/dashboard' && pathname.startsWith(href))
-  
-  return (
-    <Link
-      href={href}
-      className={`flex flex-col items-center justify-center gap-1 transition-all duration-200 ${
-        isActive 
-          ? 'text-solar-secondary' 
-          : 'text-slate-500 hover:text-slate-700'
-      }`}
-    >
-      <span className={`w-6 h-6 transition-transform ${isActive ? 'scale-110' : ''}`}>
-        {icon}
-      </span>
-      <span className={`text-xs font-medium ${isActive ? 'font-semibold' : ''}`}>
-        {label}
-      </span>
-      {isActive && (
-        <span className="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-solar-secondary rounded-b-full"></span>
-      )}
     </Link>
   )
 }
