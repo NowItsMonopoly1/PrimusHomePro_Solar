@@ -43,11 +43,22 @@ export default async function InboxPage() {
     take: 20,
   })
 
+  // Calculate stats
+  let emailCount = 0;
+  let smsCount = 0;
+  let formCount = 0;
+  
+  for (const msg of recentMessages) {
+    if (msg.type === 'EMAIL_RECEIVED') emailCount++;
+    else if (msg.type === 'SMS_RECEIVED') smsCount++;
+    else if (msg.type === 'FORM_SUBMIT') formCount++;
+  }
+
   const stats = {
     unread: recentMessages.length,
-    emails: recentMessages.filter((m: typeof recentMessages[number]) => m.type === 'EMAIL_RECEIVED').length,
-    sms: recentMessages.filter((m: typeof recentMessages[number]) => m.type === 'SMS_RECEIVED').length,
-    forms: recentMessages.filter((m: typeof recentMessages[number]) => m.type === 'FORM_SUBMIT').length,
+    emails: emailCount,
+    sms: smsCount,
+    forms: formCount,
   }
 
   return (
