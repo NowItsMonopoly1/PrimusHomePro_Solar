@@ -1,0 +1,257 @@
+// Prisma Schema - Master Spec v2.0 Compliant
+// Clean schema without hallucinated commission engine logic
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ============================================================================
+// AGENTS - Sales agents, schedulers, installers
+// ============================================================================
+
+model Agent {
+  id        String    @id @default(uuid())
+  email     String    @unique
+  name      String
+  phone     String?
+  role      AgentRole
+  
+  // Relations
+  leads     Lead[]
+  projects  Project[]
+  
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  
+  @@index([email])
+  @@index([role])
+}
+
+enum AgentRole {
+  ADMIN
+  SALES_AGENT
+  SCHEDULER
+  INSTALLER
+}
+
+// ============================================================================
+// LEADS - Potential customers
+// ============================================================================
+
+model Lead {
+  id       String     @id @default(uuid())
+  agentId  String?
+  agent    Agent?     @relation(fields: [agentId], references: [id])
+  
+  name     String
+  email    String?
+  phone    String?
+  address  String?
+  
+  status   LeadStatus @default(NEW)
+  source   String?    // Form source (landing page, referral, etc.)
+  
+  // Relations
+  solarQualifications SolarQualification[]
+  proposals           Proposal[]
+  project             Project?
+  
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  
+  @@index([agentId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum LeadStatus {
+  NEW
+  QUALIFIED
+  CONTACTED
+  PROPOSAL_SENT
+  CLOSED
+  LOST
+}
+
+// ============================================================================
+// SOLAR QUALIFICATIONS - Roof viability assessments
+// ============================================================================
+
+model SolarQualification {
+  id      String  @id @default(uuid())
+  leadId  String
+  lead    Lead    @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  
+  // Solar API Data
+  roofAreaSqM           Float
+  sunshineHoursYear     Float
+  shadingPercent        Float
+  roofPitchDegrees      Float
+  azimuthDegrees        Float
+  maxPanelCount         Int
+  
+  // Qualification Results (from domain logic)
+  roofViable            Boolean
+  solarScore            Int     // 0-100
+  confidence            String  // high, medium, low
+  
+  // Recommended System
+  recommendedSystemKw   Float?
+  
+  // Raw API Response
+  rawApiData            Json?
+  
+  createdAt DateTime @default(now())
+  
+  @@index([leadId])
+  @@index([roofViable])
+}
+
+// ============================================================================
+// PROPOSALS - Solar system proposals
+// ============================================================================
+
+model Proposal {
+  id      String  @id @default(uuid())
+  leadId  String
+  lead    Lead    @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  
+  // System Specs
+  systemSizeKw          Float
+  annualProductionKwh   Float
+  
+  // Financial
+  totalCost             Float
+  federalTaxCredit      Float   // 30% ITC
+  netCost               Float
+  monthlyPayment        Float   // If financed
+  
+  // Savings Estimates
+  estimatedSavingsYear1 Float
+  estimatedSavings25Yr  Float
+  breakEvenYear         Int
+  
+  // PDF Generation
+  pdfUrl                String?
+  
+  createdAt DateTime @default(now())
+  
+  @@index([leadId])
+}
+
+// ============================================================================
+// PROJECTS - Installation projects (closed deals)
+// ============================================================================
+
+model Project {
+  id      String        @id @default(uuid())
+  leadId  String        @unique
+  lead    Lead          @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  agentId String?
+  agent   Agent?        @relation(fields: [agentId], references: [id])
+  
+  status  ProjectStatus @default(ENGINEERING)
+  
+  // Relations
+  milestones      ProjectMilestone[]
+  commissionUnlocks CommissionUnlock[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([leadId])
+  @@index([agentId])
+  @@index([status])
+}
+
+enum ProjectStatus {
+  ENGINEERING
+  PERMITTING
+  SCHEDULED
+  INSTALLATION
+  INSPECTION
+  PTO
+}
+
+// ============================================================================
+// PROJECT MILESTONES - Project phase tracking
+// ============================================================================
+
+model ProjectMilestone {
+  id         String   @id @default(uuid())
+  projectId  String
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  name        String   // e.g., "Site Survey", "Contract Signed"
+  milestoneKey String  // e.g., "site_survey", "contract_signed"
+  description String?
+  
+  isComplete  Boolean  @default(false)
+  completedAt DateTime?
+  completedBy String?  // Agent who completed
+  
+  sortOrder   Int      @default(0)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([projectId])
+  @@index([isComplete])
+}
+
+// ============================================================================
+// COMMISSION UNLOCKS - Commission tracking (NO hardcoded percentages)
+// ============================================================================
+
+model CommissionUnlock {
+  id         String   @id @default(uuid())
+  projectId  String
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  agentId    String   // Agent earning commission
+  
+  milestoneKey String // Links to ProjectMilestone.milestoneKey
+  amount       Float  // Dollar amount (calculated by business logic, not hardcoded)
+  
+  status       CommissionStatus @default(PENDING)
+  
+  unlockedAt   DateTime?
+  paidAt       DateTime?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([projectId])
+  @@index([agentId])
+  @@index([status])
+}
+
+enum CommissionStatus {
+  PENDING   // Milestone not complete
+  UNLOCKED  // Milestone complete, ready to pay
+  PAID      // Payment made
+}
+
+// ============================================================================
+// AUTOMATION EVENTS - Automation trigger history
+// ============================================================================
+
+model AutomationEvent {
+  id         String   @id @default(uuid())
+  leadId     String
+  
+  eventType  String   // no_reply_3d, new_lead_flash, etc.
+  triggeredAt DateTime
+  handled    Boolean  @default(false)
+  handledAt  DateTime?
+  
+  metadata   Json?
+  
+  @@index([leadId])
+  @@index([handled])
+  @@index([triggeredAt])
+}

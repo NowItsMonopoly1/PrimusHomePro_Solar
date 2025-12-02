@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "strict": true,
+    "jsx": "preserve",
+    "esModuleInterop": true,
+    "allowJs": false,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "@domain/*": ["packages/domain/*"],
+      "@services/*": ["packages/services/*"],
+      "@ui/*": ["packages/ui/*"],
+      "@automation/*": ["packages/automation/*"],
+      "@config/*": ["packages/config/*"]
+    }
+  }
+}
