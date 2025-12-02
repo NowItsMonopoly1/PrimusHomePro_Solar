@@ -42,42 +42,43 @@ const config: Config = {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
         },
-        // M.P.A. (Modern Professional Aesthetic) Brand Colors
+        // Enterprise SaaS Platform Colors
         'solar-primary': {
-          DEFAULT: '#F59E0B',  // Amber - Trust & Energy
-          light: '#FBBF24',
-          dark: '#D97706',
+          DEFAULT: '#1e3a8a',  // Deep Royal Blue - Enterprise Authority
+          light: '#3b82f6',    // Electric Blue - Interactive Elements
+          dark: '#1e40af',     // Navy - Depth & Contrast
         },
         'solar-secondary': {
-          DEFAULT: '#1E40AF',  // Deep Blue - Authority & Trust
-          light: '#3B82F6',
-          dark: '#1E3A8A',
+          DEFAULT: '#3b82f6',  // Electric Blue - Primary Actions
+          light: '#60a5fa',
+          dark: '#2563eb',
         },
         'solar-success': {
-          DEFAULT: '#059669',  // Emerald - Profit & Growth
+          DEFAULT: '#059669',  // Emerald - Profit & Growth (keep)
           light: '#10B981',
           dark: '#047857',
         },
         'solar-danger': {
-          DEFAULT: '#DC2626',  // Red - Alerts
+          DEFAULT: '#DC2626',  // Red - Alerts (keep)
           dark: '#B91C1C',
         },
         'solar-gray': {
-          50: '#FAFAFA',
-          100: '#F4F4F5',
-          200: '#E4E4E7',
-          300: '#D4D4D8',
-          400: '#A1A1AA',
-          500: '#71717A',
-          600: '#52525B',
-          700: '#3F3F46',
-          800: '#27272A',
-          900: '#18181B',
+          50: '#f8fafc',   // slate-50 - Ultra Light Backgrounds
+          100: '#f1f5f9',  // slate-100
+          200: '#e2e8f0',  // slate-200
+          300: '#cbd5e1',  // slate-300
+          400: '#94a3b8',  // slate-400
+          500: '#64748b',  // slate-500
+          600: '#475569',  // slate-600
+          700: '#334155',  // slate-700 - Dark UI Elements
+          800: '#1e293b',  // slate-800 - Near Black
+          900: '#0f172a',  // slate-900 - Pure Black
         },
-        'solar-bg': '#FAFAFA',
+        'solar-bg': '#f8fafc',  // slate-50
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-geist-sans)', 'Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        mono: ['var(--font-geist-mono)', 'Menlo', 'Monaco', 'Courier New', 'monospace'],
       },
       borderRadius: {
         lg: 'var(--radius)',

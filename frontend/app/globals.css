@@ -1,52 +1,54 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://cdn.jsdelivr.net/npm/geist@1.0.0/dist/sans/geist-sans.css');
+@import url('https://cdn.jsdelivr.net/npm/geist@1.0.0/dist/mono/geist-mono.css');
 
 @import "tailwindcss";
 @config "../tailwind.config.ts";
 
 @layer base {
   :root {
-    --background: 0 0% 98%; /* #FAFAFA - M.P.A. light background */
-    --foreground: 240 10% 10%; /* Near black for text */
+    --background: 210 40% 98%; /* slate-50 - Enterprise Light */
+    --foreground: 222 47% 11%; /* slate-900 - High Contrast Text */
     --card: 0 0% 100%;
-    --card-foreground: 240 10% 10%;
+    --card-foreground: 222 47% 11%;
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 10%;
-    --primary: 38 92% 50%; /* Amber #F59E0B */
+    --popover-foreground: 222 47% 11%;
+    --primary: 221 83% 33%; /* Deep Royal Blue #1e3a8a */
     --primary-foreground: 0 0% 100%;
-    --secondary: 224 76% 40%; /* Deep Blue #1E40AF */
+    --secondary: 217 91% 60%; /* Electric Blue #3b82f6 */
     --secondary-foreground: 0 0% 100%;
-    --muted: 240 5% 96%;
-    --muted-foreground: 240 4% 46%;
-    --accent: 38 92% 50%;
-    --accent-foreground: 240 10% 10%;
+    --muted: 210 40% 96%; /* slate-100 */
+    --muted-foreground: 215 16% 47%; /* slate-600 */
+    --accent: 217 91% 60%; /* Electric Blue */
+    --accent-foreground: 222 47% 11%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    --border: 240 6% 90%;
-    --input: 240 6% 90%;
-    --ring: 38 92% 50%;
+    --border: 214 32% 91%; /* slate-200 */
+    --input: 214 32% 91%;
+    --ring: 217 91% 60%; /* Electric Blue focus ring */
     --radius: 0.5rem;
   }
 
   .dark {
-    --background: 240 10% 10%;
-    --foreground: 0 0% 98%;
-    --card: 240 10% 12%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 10% 12%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 38 92% 50%;
-    --primary-foreground: 240 10% 10%;
-    --secondary: 224 76% 48%;
+    --background: 222 47% 11%; /* slate-900 */
+    --foreground: 210 40% 98%; /* slate-50 */
+    --card: 215 28% 17%; /* slate-800 */
+    --card-foreground: 210 40% 98%;
+    --popover: 215 28% 17%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217 91% 60%; /* Electric Blue */
+    --primary-foreground: 222 47% 11%;
+    --secondary: 221 83% 53%; /* Lighter Royal Blue */
     --secondary-foreground: 0 0% 100%;
-    --muted: 240 4% 16%;
-    --muted-foreground: 240 5% 65%;
-    --accent: 38 92% 50%;
+    --muted: 217 19% 27%; /* slate-700 */
+    --muted-foreground: 215 20% 65%; /* slate-400 */
+    --accent: 217 91% 60%; /* Electric Blue */
     --accent-foreground: 0 0% 100%;
     --destructive: 0 63% 31%;
     --destructive-foreground: 0 0% 100%;
-    --border: 240 4% 16%;
-    --input: 240 4% 16%;
-    --ring: 38 92% 50%;
+    --border: 217 19% 27%; /* slate-700 */
+    --input: 217 19% 27%;
+    --ring: 217 91% 60%; /* Electric Blue */
   }
 }
 

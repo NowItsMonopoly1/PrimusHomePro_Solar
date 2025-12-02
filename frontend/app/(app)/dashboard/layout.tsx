@@ -98,19 +98,20 @@ export default function DashboardLayout({
               />
             </div>
           </div>
-          
-          {/* Mobile Navigation */}
-          <nav className="lg:hidden flex items-center gap-1 px-4 py-2 overflow-x-auto border-t border-solar-gray-100">
-            <MobileNavLink href="/dashboard" label="Dashboard" />
-            <MobileNavLink href="/dashboard/leads" label="Leads" />
-            <MobileNavLink href="/dashboard/projects" label="Projects" />
-            <MobileNavLink href="/dashboard/automations" label="Automations" />
-            <MobileNavLink href="/dashboard/billing" label="Billing" />
-          </nav>
         </header>
 
         {/* Page Content */}
-        <main className="bg-solar-bg min-h-[calc(100vh-4rem)]">{children}</main>
+        <main className="bg-solar-bg min-h-screen pb-20 lg:pb-0">{children}</main>
+        
+        {/* Mobile Bottom Tab Bar - Road Warrior Navigation */}
+        <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 shadow-lg">
+          <div className="grid grid-cols-4 h-16">
+            <MobileTabLink href="/dashboard" icon={<LayoutDashboard />} label="Dashboard" />
+            <MobileTabLink href="/dashboard/map" icon={<Sun />} label="Map" />
+            <MobileTabLink href="/dashboard/leads" icon={<Users />} label="Leads" />
+            <MobileTabLink href="/dashboard/settings" icon={<Settings />} label="Settings" />
+          </div>
+        </nav>
       </div>
     </div>
   )
@@ -129,14 +130,32 @@ function NavLink({ href, icon, label }: { href: string; icon: React.ReactNode; l
   )
 }
 
-// Mobile Navigation Link Component
-function MobileNavLink({ href, label }: { href: string; label: string }) {
+// Mobile Bottom Tab Component - One-Handed Operation
+'use client'
+import { usePathname } from 'next/navigation'
+
+function MobileTabLink({ href, icon, label }: { href: string; icon: React.ReactNode; label: string }) {
+  const pathname = usePathname()
+  const isActive = pathname === href || (href !== '/dashboard' && pathname.startsWith(href))
+  
   return (
     <Link
       href={href}
-      className="px-4 py-1.5 text-sm font-medium text-solar-gray-600 hover:text-solar-primary hover:bg-solar-gray-100 rounded-full whitespace-nowrap transition-colors"
+      className={`flex flex-col items-center justify-center gap-1 transition-all duration-200 ${
+        isActive 
+          ? 'text-solar-secondary' 
+          : 'text-slate-500 hover:text-slate-700'
+      }`}
     >
-      {label}
+      <span className={`w-6 h-6 transition-transform ${isActive ? 'scale-110' : ''}`}>
+        {icon}
+      </span>
+      <span className={`text-xs font-medium ${isActive ? 'font-semibold' : ''}`}>
+        {label}
+      </span>
+      {isActive && (
+        <span className="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-solar-secondary rounded-b-full"></span>
+      )}
     </Link>
   )
 }

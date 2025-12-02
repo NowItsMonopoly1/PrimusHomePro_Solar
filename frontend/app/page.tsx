@@ -38,100 +38,158 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* Hero Section - M.P.A. Split Screen Light Design */}
-      <section className="bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            {/* Left - Content */}
-            <div>
-              {/* Badge */}
-              <div className="inline-flex items-center gap-2 bg-solar-primary/10 px-4 py-2 rounded-full mb-8">
-                <Star className="w-4 h-4 text-solar-primary fill-solar-primary" />
-                <span className="text-sm font-medium text-solar-gray-700">Trusted by 500+ Solar Contractors</span>
+      {/* Hero Section - Enterprise SaaS Product Hero */}
+      <section className="relative bg-gradient-to-b from-slate-50 via-white to-slate-50 overflow-hidden">
+        {/* Background Grid Pattern */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#e2e8f0_1px,transparent_1px),linear-gradient(to_bottom,#e2e8f0_1px,transparent_1px)] bg-[size:4rem_4rem] opacity-30"></div>
+        
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
+          <div className="text-center max-w-4xl mx-auto mb-16">
+            {/* Badge */}
+            <div className="inline-flex items-center gap-2 bg-solar-secondary/10 border border-solar-secondary/20 px-4 py-2 rounded-full mb-6">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-solar-secondary opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-solar-secondary"></span>
+              </span>
+              <span className="text-sm font-semibold text-solar-secondary">The AI Operating System for Home Pro Sales</span>
+            </div>
+            
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-slate-900 mb-6 leading-tight tracking-tight">
+              The Ultimate Tool{' '}
+              <span className="bg-gradient-to-r from-solar-primary via-solar-secondary to-solar-secondary bg-clip-text text-transparent">
+                For Your Job
+              </span>
+            </h1>
+            
+            <p className="text-xl md:text-2xl text-slate-600 mb-10 leading-relaxed max-w-3xl mx-auto">
+              Elite AI software platform for Road Warrior Sales Agents. Close deals in 5 minutes from your iPad with intelligent lead scoring, real-time proposals, and automated follow-ups.
+            </p>
+            
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              <SignUpButton mode="modal">
+                <button className="group px-8 py-4 text-lg font-bold text-white bg-solar-secondary hover:bg-solar-secondary-dark rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-2">
+                  Start Free Trial
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </button>
+              </SignUpButton>
+              <Link href="/templates/simple">
+                <button className="px-8 py-4 text-lg font-semibold text-slate-700 bg-white border-2 border-slate-200 hover:border-solar-secondary hover:text-solar-secondary rounded-lg transition-all duration-200">
+                  See Live Demo
+                </button>
+              </Link>
+            </div>
+            
+            {/* Trust indicators */}
+            <div className="mt-8 flex flex-wrap justify-center gap-6 text-slate-500">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-solar-success" />
+                <span className="text-sm font-medium">14-day free trial</span>
               </div>
-              
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-solar-gray-900 mb-6 leading-tight">
-                Close More Solar Deals with{' '}
-                <span className="text-solar-secondary">AI-Powered</span> CRM
-              </h1>
-              
-              <p className="text-xl text-solar-gray-600 mb-10 leading-relaxed">
-                Capture leads, automate follow-ups, and boost conversions with intelligent solar-specific tools built for contractors.
-              </p>
-              
-              <div className="flex flex-col sm:flex-row gap-4">
-                <SignUpButton mode="modal">
-                  <button className="group px-8 py-4 text-lg font-semibold text-white bg-solar-primary hover:bg-solar-primary-dark rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2">
-                    Start Your Free Trial
-                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                  </button>
-                </SignUpButton>
-                <Link href="/templates/simple">
-                  <button className="px-8 py-4 text-lg font-semibold text-solar-gray-700 bg-solar-gray-100 hover:bg-solar-gray-200 rounded-lg transition-all duration-200">
-                    Watch Demo
-                  </button>
-                </Link>
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-solar-success" />
+                <span className="text-sm font-medium">No credit card</span>
               </div>
-              
-              {/* Trust indicators */}
-              <div className="mt-10 flex flex-wrap gap-6 text-solar-gray-500">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-solar-success" />
-                  <span className="text-sm">14-day free trial</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-solar-success" />
-                  <span className="text-sm">No credit card required</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-solar-success" />
-                  <span className="text-sm">Cancel anytime</span>
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-solar-success" />
+                <span className="text-sm font-medium">Used by 500+ agents</span>
+              </div>
+            </div>
+          </div>
+          
+          {/* Product Screenshot - iPad Presentation Mode Mockup */}
+          <div className="relative max-w-6xl mx-auto">
+            {/* Floating UI Elements */}
+            <div className="absolute -top-8 -left-8 bg-solar-success text-white px-4 py-2 rounded-lg shadow-xl text-sm font-semibold z-10 hidden lg:block">
+              ✓ Deal Closed: $42,350
+            </div>
+            <div className="absolute -top-8 -right-8 bg-solar-secondary text-white px-4 py-2 rounded-lg shadow-xl text-sm font-semibold z-10 hidden lg:block animate-pulse">
+              🔥 3 Hot Leads Nearby
+            </div>
+            
+            {/* Main Product Mockup */}
+            <div className="relative perspective-1000">
+              <div className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl p-8 shadow-2xl transform -rotate-1 hover:rotate-0 transition-transform duration-500">
+                {/* iPad Frame Simulation */}
+                <div className="bg-white rounded-xl overflow-hidden shadow-inner">
+                  {/* Header Bar */}
+                  <div className="bg-slate-50 border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-solar-secondary rounded-lg flex items-center justify-center">
+                        <Sun className="w-5 h-5 text-white" />
+                      </div>
+                      <span className="text-lg font-bold text-slate-900">Primus Home Pro</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <div className="px-3 py-1.5 bg-solar-success/10 text-solar-success text-xs font-bold rounded-full">VIABLE</div>
+                      <div className="px-3 py-1.5 bg-solar-secondary/10 text-solar-secondary text-xs font-bold rounded-full">8.5 kW</div>
+                    </div>
+                  </div>
+                  
+                  {/* Dashboard Content */}
+                  <div className="p-6 space-y-4">
+                    {/* Savings Hero */}
+                    <div className="bg-gradient-to-br from-solar-success via-emerald-500 to-emerald-600 rounded-xl p-6 text-white">
+                      <div className="text-sm font-semibold opacity-90 mb-1">25-Year Savings</div>
+                      <div className="text-5xl font-extrabold mb-2">$67,420</div>
+                      <div className="text-sm opacity-90">Break-even in 6.2 years ✓</div>
+                    </div>
+                    
+                    {/* Status Cards Grid */}
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-8 h-8 bg-solar-secondary/10 rounded-lg flex items-center justify-center">
+                            <Zap className="w-4 h-4 text-solar-secondary" />
+                          </div>
+                        </div>
+                        <div className="text-2xl font-bold text-slate-900">92</div>
+                        <div className="text-xs text-slate-600">Lead Score</div>
+                      </div>
+                      <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-8 h-8 bg-solar-primary/10 rounded-lg flex items-center justify-center">
+                            <BarChart3 className="w-4 h-4 text-solar-primary" />
+                          </div>
+                        </div>
+                        <div className="text-2xl font-bold text-slate-900">47</div>
+                        <div className="text-xs text-slate-600">Proposals</div>
+                      </div>
+                      <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-8 h-8 bg-solar-success/10 rounded-lg flex items-center justify-center">
+                            <Users className="w-4 h-4 text-solar-success" />
+                          </div>
+                        </div>
+                        <div className="text-2xl font-bold text-slate-900">23</div>
+                        <div className="text-xs text-slate-600">Active Deals</div>
+                      </div>
+                    </div>
+                    
+                    {/* AI Activity Feed */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-3 bg-solar-primary/5 border-l-4 border-solar-primary rounded p-3">
+                        <div className="text-xl">⚡</div>
+                        <div className="flex-1">
+                          <div className="text-sm font-semibold text-slate-900">AI: Follow-up email sent</div>
+                          <div className="text-xs text-slate-600">2 minutes ago</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 bg-slate-50 rounded p-3">
+                        <div className="text-xl">📍</div>
+                        <div className="flex-1">
+                          <div className="text-sm font-semibold text-slate-900">New lead: 0.3 mi from you</div>
+                          <div className="text-xs text-slate-600">5 minutes ago</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
             
-            {/* Right - Visual Element */}
-            <div className="relative hidden lg:block">
-              <div className="relative bg-gradient-to-br from-solar-secondary to-solar-secondary-dark rounded-2xl p-8 shadow-2xl">
-                <div className="absolute -top-4 -right-4 w-20 h-20 bg-solar-primary rounded-xl flex items-center justify-center shadow-lg">
-                  <Sun className="w-10 h-10 text-white" />
-                </div>
-                <div className="space-y-6">
-                  <div className="bg-white/10 backdrop-blur rounded-xl p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-solar-success rounded-full flex items-center justify-center">
-                        <Zap className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <div className="text-white font-semibold">New Lead Qualified</div>
-                        <div className="text-white/70 text-sm">Score: 92 - Hot Lead</div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="bg-white/10 backdrop-blur rounded-xl p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-solar-primary rounded-full flex items-center justify-center">
-                        <BarChart3 className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <div className="text-white font-semibold">Monthly Revenue</div>
-                        <div className="text-white/70 text-sm">$127,450 (+23%)</div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="bg-white/10 backdrop-blur rounded-xl p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-                        <Users className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <div className="text-white font-semibold">Proposals Sent</div>
-                        <div className="text-white/70 text-sm">47 this week</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+            {/* Floating Badge Bottom */}
+            <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-white px-6 py-3 rounded-full shadow-xl border border-slate-200 z-10 whitespace-nowrap">
+              <span className="text-sm font-semibold text-slate-700">Used on iPad, iPhone, and Desktop</span>
             </div>
           </div>
         </div>
