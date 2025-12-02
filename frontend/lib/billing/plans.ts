@@ -21,7 +21,7 @@ export const PLANS: PlanConfig[] = [
     name: 'Starter',
     description: 'Perfect for individual contractors.',
     priceMonthly: 198,
-    stripePriceId: process.env.STRIPE_PRICE_STARTER || '',
+    stripePriceId: process.env.STRIPE_PRICE_STARTER || 'price_1SZlSu05lmCbSdUDPIHc0nJ9',
     seats: 1,
     successFee: 88, // $88 per accepted proposal
     leadLimit: 500,
@@ -32,7 +32,7 @@ export const PLANS: PlanConfig[] = [
     name: 'Pro',
     description: 'For growing teams with multiple reps.',
     priceMonthly: 498,
-    stripePriceId: process.env.STRIPE_PRICE_PRO || '',
+    stripePriceId: process.env.STRIPE_PRICE_PRO || 'price_1SZlTR05lmCbSdUD5mXIwLWi',
     seats: 5,
     successFee: 68, // $68 per accepted proposal
     leadLimit: 2000,
@@ -43,7 +43,7 @@ export const PLANS: PlanConfig[] = [
     name: 'Agency',
     description: 'For scaling businesses & multi-location operations.',
     priceMonthly: 1198,
-    stripePriceId: process.env.STRIPE_PRICE_AGENCY || '',
+    stripePriceId: process.env.STRIPE_PRICE_AGENCY || 'price_1SZlTy05lmCbSdUDsT2Pv4EX',
     seats: 10,
     successFee: 48, // $48 per accepted proposal
     leadLimit: null, // unlimited
