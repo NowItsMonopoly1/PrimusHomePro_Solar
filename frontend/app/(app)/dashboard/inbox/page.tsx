@@ -11,6 +11,19 @@ import { Button } from '@/components/ui/button'
 import { Inbox, Mail, MessageSquare, Bell } from 'lucide-react'
 import Link from 'next/link'
 
+// Type for messages with lead included
+type MessageWithLead = {
+  id: string;
+  type: string;
+  content: string | null;
+  createdAt: Date;
+  lead: {
+    id: string;
+    name: string | null;
+    email: string | null;
+  };
+};
+
 export default async function InboxPage() {
   const { userId: clerkUserId } = await auth()
 
@@ -143,7 +156,7 @@ export default async function InboxPage() {
             </div>
           ) : (
             <div className="space-y-4">
-              {recentMessages.map((message) => (
+              {recentMessages.map((message: MessageWithLead) => (
                 <div
                   key={message.id}
                   className="flex items-start gap-4 rounded-lg border border-border p-4 transition-colors hover:bg-muted/50"
