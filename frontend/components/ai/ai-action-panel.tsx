@@ -17,8 +17,8 @@ export function AIActionPanel({ lead }: AIActionPanelProps) {
   const [channel, setChannel] = useState<AIChannel>('email')
   const [isPending, startTransition] = useTransition()
 
-  const hasEmail = Boolean(lead.email)
-  const hasPhone = Boolean(lead.phone)
+  const hasEmail = Boolean(lead?.email)
+  const hasPhone = Boolean(lead?.phone)
 
   function handleDraft(tone: AITone = 'default') {
     startTransition(async () => {
