@@ -21,7 +21,7 @@ export default function DashboardLayout({
           <div className="w-10 h-10 bg-solar-primary rounded-xl flex items-center justify-center">
             <Sun className="w-6 h-6 text-white" />
           </div>
-          <span className="text-xl font-semibold">Primus<span className="text-solar-primary">Solar</span></span>
+          <span className="text-xl font-semibold">Primus<span className="text-solar-primary">Home</span>Pro</span>
         </div>
         
         {/* Navigation */}
@@ -64,7 +64,7 @@ export default function DashboardLayout({
               <div className="w-8 h-8 bg-solar-primary rounded-lg flex items-center justify-center">
                 <Sun className="w-5 h-5 text-white" />
               </div>
-              <span className="font-semibold text-solar-gray-900">Primus<span className="text-solar-primary">Solar</span></span>
+              <span className="font-semibold text-solar-gray-900">Primus<span className="text-solar-primary">Home</span>Pro</span>
             </div>
             
             {/* Search Bar */}

@@ -15,7 +15,7 @@ export default function Home() {
               <div className="w-10 h-10 bg-solar-primary rounded-xl flex items-center justify-center">
                 <Sun className="w-6 h-6 text-white" />
               </div>
-              <span className="text-2xl font-bold text-solar-gray-900">Primus<span className="text-solar-primary">Solar</span></span>
+              <span className="text-2xl font-bold text-solar-gray-900">Primus<span className="text-solar-primary">Home</span>Pro</span>
             </div>
             <div className="hidden md:flex items-center gap-8">
               <Link href="#features" className="text-solar-gray-600 hover:text-solar-secondary font-medium transition-colors">Features</Link>
@@ -322,7 +322,7 @@ export default function Home() {
             Ready to Supercharge Your Solar Sales?
           </h2>
           <p className="text-lg text-solar-gray-600 mb-10 max-w-2xl mx-auto">
-            Join 500+ solar contractors who are closing more deals and growing faster with Primus Solar.
+            Join 500+ solar contractors who are closing more deals and growing faster with Primus Home Pro.
           </p>
           <SignUpButton mode="modal">
             <button className="group px-10 py-4 text-lg font-semibold text-white bg-solar-primary hover:bg-solar-primary-dark rounded-lg shadow-md hover:shadow-lg transition-all duration-200 inline-flex items-center gap-2">
@@ -342,7 +342,7 @@ export default function Home() {
               <div className="w-10 h-10 bg-solar-primary rounded-xl flex items-center justify-center">
                 <Sun className="w-6 h-6 text-white" />
               </div>
-              <span className="text-2xl font-bold">Primus<span className="text-solar-primary">Solar</span></span>
+              <span className="text-2xl font-bold">Primus<span className="text-solar-primary">Home</span>Pro</span>
             </div>
             <div className="flex gap-8 text-solar-gray-400">
               <Link href="#" className="hover:text-white transition-colors">Privacy</Link>
@@ -351,7 +351,7 @@ export default function Home() {
             </div>
           </div>
           <div className="mt-8 pt-8 border-t border-solar-gray-800 text-center text-solar-gray-500 text-sm">
-            <p>&copy; 2025 Primus Solar. All rights reserved.</p>
+            <p>&copy; 2025 Primus Home Pro. All rights reserved.</p>
           </div>
         </div>
       </footer>
