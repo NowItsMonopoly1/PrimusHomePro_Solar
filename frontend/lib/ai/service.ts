@@ -203,7 +203,7 @@ export async function generateLeadReply(params: {
   }
 
   // Extract AI analysis from events
-  const analysisEvent = lead.events.find((e) => {
+  const analysisEvent = lead.events.find((e: { metadata: unknown }) => {
     const metadata = e.metadata as any
     return metadata?.intent || metadata?.score
   })
@@ -215,7 +215,7 @@ export async function generateLeadReply(params: {
   // Build context from recent events
   const recentHistory = lead.events
     .slice(0, 3)
-    .map((e) => `${e.type}: ${e.content}`)
+    .map((e: { type: string; content: string | null }) => `${e.type}: ${e.content}`)
     .join('\n')
 
   // Construct prompt

@@ -113,7 +113,7 @@ export async function runAutomations(ctx: AutomationContext): Promise<void> {
     console.log(`[AUTO] Found ${automations.length} automation(s)`)
 
     // 3. Get AI analysis from latest event
-    const analysisEvent = lead.events.find((e) => {
+    const analysisEvent = lead.events.find((e: { metadata: unknown }) => {
       const metadata = e.metadata as any
       return metadata?.intent || metadata?.score
     })
