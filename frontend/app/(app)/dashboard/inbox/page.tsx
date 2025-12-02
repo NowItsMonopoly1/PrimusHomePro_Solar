@@ -45,9 +45,9 @@ export default async function InboxPage() {
 
   const stats = {
     unread: recentMessages.length,
-    emails: recentMessages.filter((m) => m.type === 'EMAIL_RECEIVED').length,
-    sms: recentMessages.filter((m) => m.type === 'SMS_RECEIVED').length,
-    forms: recentMessages.filter((m) => m.type === 'FORM_SUBMIT').length,
+    emails: recentMessages.filter((m: typeof recentMessages[number]) => m.type === 'EMAIL_RECEIVED').length,
+    sms: recentMessages.filter((m: typeof recentMessages[number]) => m.type === 'SMS_RECEIVED').length,
+    forms: recentMessages.filter((m: typeof recentMessages[number]) => m.type === 'FORM_SUBMIT').length,
   }
 
   return (
