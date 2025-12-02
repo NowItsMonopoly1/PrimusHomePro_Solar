@@ -1,7 +1,7 @@
 'use client'
 
 // PRIMUS HOME PRO - Template 1: Simple Hero Form
-// High-conversion, single-field lead capture
+// High-conversion, solar-branded lead capture
 
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -11,7 +11,7 @@ import { createLead } from '@/lib/actions/create-lead'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { CheckCircle2, ArrowRight } from 'lucide-react'
+import { CheckCircle2, ArrowRight, Sun, Shield, Clock, Star, Zap } from 'lucide-react'
 
 interface LeadCaptureSimpleProps {
   headline?: string
@@ -21,10 +21,10 @@ interface LeadCaptureSimpleProps {
 }
 
 export function LeadCaptureSimple({
-  headline = 'Get Your Free Roofing Inspection',
-  subheadline = 'Licensed professionals. Zero-pressure quote. 24-hour response.',
+  headline = 'Get Your Free Solar Estimate',
+  subheadline = 'Save up to 70% on electricity bills. Free installation assessment. No pressure, just savings.',
   source = 'LandingPage-Simple',
-  ctaText = 'Get Started',
+  ctaText = 'Get My Free Quote',
 }: LeadCaptureSimpleProps) {
   const [isSuccess, setIsSuccess] = useState(false)
 
@@ -51,21 +51,21 @@ export function LeadCaptureSimple({
 
   if (isSuccess) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background p-6">
-        <Card className="w-full max-w-md text-center">
+      <div className="flex min-h-screen items-center justify-center bg-solar-bg p-6">
+        <Card variant="solar" className="w-full max-w-md text-center">
           <CardHeader>
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-              <CheckCircle2 className="h-8 w-8 text-primary" />
+            <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full solar-gradient shadow-xl solar-glow">
+              <CheckCircle2 className="h-10 w-10 text-solar-gray-900" />
             </div>
-            <CardTitle>Thank You!</CardTitle>
-            <CardDescription className="text-base">
-              We've received your request. A member of our team will reach out within 24 hours to
-              schedule your free inspection.
+            <CardTitle className="text-3xl">You're All Set! 🎉</CardTitle>
+            <CardDescription className="text-base text-solar-gray-600">
+              We've received your request. A solar expert will contact you within 24 hours to
+              discuss your personalized savings estimate.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Check your email/phone for confirmation.
+            <p className="text-sm text-solar-gray-500">
+              Check your email for confirmation details.
             </p>
           </CardContent>
         </Card>
@@ -74,78 +74,132 @@ export function LeadCaptureSimple({
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background p-6">
-      <div className="w-full max-w-4xl space-y-8 text-center">
-        {/* Hero Section */}
-        <div className="space-y-4">
-          <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
-            {headline}
-          </h1>
-          <p className="mx-auto max-w-2xl text-lg text-muted-foreground sm:text-xl">
-            {subheadline}
-          </p>
-        </div>
-
-        {/* Lead Capture Form */}
-        <Card className="mx-auto w-full max-w-lg">
-          <CardHeader>
-            <CardTitle className="text-2xl">Start Your Free Inspection</CardTitle>
-            <CardDescription>
-              Enter your contact info and we'll get back to you within 24 hours
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              <Input
-                {...register('name')}
-                placeholder="Your Name"
-                error={errors.name?.message}
-              />
-
-              <Input
-                {...register('email')}
-                type="email"
-                placeholder="Email Address"
-                error={errors.email?.message}
-              />
-
-              <Input
-                {...register('phone')}
-                type="tel"
-                placeholder="Phone Number"
-                error={errors.phone?.message}
-              />
-
-              <Input
-                {...register('message')}
-                placeholder="Tell us about your project (optional)"
-              />
-
-              <Button
-                type="submit"
-                size="lg"
-                className="w-full"
-                isLoading={isSubmitting}
-              >
-                {ctaText}
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-
-              <p className="text-xs text-muted-foreground">
-                By submitting this form, you agree to receive text messages and emails from Primus
-                Home Pro. Standard rates may apply.
+    <div className="min-h-screen bg-solar-bg">
+      {/* Hero Section */}
+      <div className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-solar-secondary via-solar-secondary-dark to-solar-secondary"></div>
+        <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10"></div>
+        <div className="absolute top-20 right-10 w-72 h-72 bg-solar-primary/20 rounded-full blur-3xl"></div>
+        
+        <div className="relative max-w-7xl mx-auto px-4 py-16 md:py-24">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            {/* Left - Text Content */}
+            <div className="text-center lg:text-left">
+              <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full border border-white/20 mb-6">
+                <Sun className="w-5 h-5 text-solar-primary" />
+                <span className="text-sm font-medium text-white">Free Solar Assessment</span>
+              </div>
+              
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-white mb-6 leading-tight">
+                {headline}
+              </h1>
+              
+              <p className="text-xl text-white/80 mb-8 max-w-lg mx-auto lg:mx-0">
+                {subheadline}
               </p>
-            </form>
-          </CardContent>
-        </Card>
+              
+              {/* Trust Badges */}
+              <div className="flex flex-wrap gap-4 justify-center lg:justify-start">
+                <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-lg">
+                  <Shield className="w-5 h-5 text-solar-success" />
+                  <span className="text-sm text-white">Licensed & Insured</span>
+                </div>
+                <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-lg">
+                  <Clock className="w-5 h-5 text-solar-primary" />
+                  <span className="text-sm text-white">24-Hour Response</span>
+                </div>
+                <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-lg">
+                  <Star className="w-5 h-5 text-solar-primary fill-solar-primary" />
+                  <span className="text-sm text-white">4.9/5 Rating</span>
+                </div>
+              </div>
+            </div>
+            
+            {/* Right - Form */}
+            <div>
+              <Card variant="glass" className="w-full max-w-md mx-auto">
+                <CardHeader className="text-center">
+                  <div className="w-14 h-14 solar-gradient rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                    <Zap className="w-7 h-7 text-solar-gray-900" />
+                  </div>
+                  <CardTitle className="text-2xl font-bold text-solar-gray-900">Start Saving Today</CardTitle>
+                  <CardDescription className="text-solar-gray-600">
+                    Get your personalized solar quote in minutes
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                    <Input
+                      {...register('name')}
+                      placeholder="Your Full Name"
+                      error={errors.name?.message}
+                      variant="solar"
+                    />
 
-        {/* Social Proof */}
-        <div className="mx-auto max-w-2xl space-y-4">
-          <p className="text-sm font-medium text-muted-foreground">Trusted by homeowners across the region</p>
-          <div className="flex flex-wrap items-center justify-center gap-8 opacity-50 grayscale">
-            <div className="text-xs font-semibold">★★★★★ 4.9/5 on Google</div>
-            <div className="text-xs font-semibold">500+ Projects Completed</div>
-            <div className="text-xs font-semibold">Licensed & Insured</div>
+                    <Input
+                      {...register('email')}
+                      type="email"
+                      placeholder="Email Address"
+                      error={errors.email?.message}
+                      variant="solar"
+                    />
+
+                    <Input
+                      {...register('phone')}
+                      type="tel"
+                      placeholder="Phone Number"
+                      error={errors.phone?.message}
+                      variant="solar"
+                    />
+
+                    <Input
+                      {...register('message')}
+                      placeholder="Your Address (for satellite analysis)"
+                      variant="solar"
+                    />
+
+                    <Button
+                      type="submit"
+                      variant="solar"
+                      size="xl"
+                      className="w-full"
+                      isLoading={isSubmitting}
+                    >
+                      {ctaText}
+                      <ArrowRight className="w-5 h-5" />
+                    </Button>
+
+                    <p className="text-xs text-center text-solar-gray-500">
+                      🔒 Your information is secure. We never share your data.
+                    </p>
+                  </form>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Social Proof Bar */}
+      <div className="bg-white border-t border-solar-gray-200 py-8">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+            <div>
+              <div className="text-3xl font-black text-solar-secondary">500+</div>
+              <div className="text-sm text-solar-gray-600">Installations</div>
+            </div>
+            <div>
+              <div className="text-3xl font-black text-solar-secondary">$2.5M+</div>
+              <div className="text-sm text-solar-gray-600">Customer Savings</div>
+            </div>
+            <div>
+              <div className="text-3xl font-black text-solar-secondary">4.9★</div>
+              <div className="text-sm text-solar-gray-600">Google Rating</div>
+            </div>
+            <div>
+              <div className="text-3xl font-black text-solar-secondary">25yr</div>
+              <div className="text-sm text-solar-gray-600">Warranty</div>
+            </div>
           </div>
         </div>
       </div>
