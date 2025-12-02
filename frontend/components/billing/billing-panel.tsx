@@ -49,7 +49,6 @@ export function BillingPanel({ user, currentPlan }: BillingPanelProps) {
     <div className="grid gap-6 md:grid-cols-3">
       {PLANS.map((plan) => {
         const isCurrent = currentPlan.id === plan.id
-        const isFree = plan.priceMonthly === 0
 
         return (
           <div
@@ -68,7 +67,7 @@ export function BillingPanel({ user, currentPlan }: BillingPanelProps) {
 
             <h3 className="text-lg font-bold text-foreground">{plan.name}</h3>
             <div className="mt-2 text-3xl font-bold text-foreground">
-              ${plan.priceMonthly}
+              ${plan.priceMonthly.toLocaleString()}
               <span className="text-sm font-normal text-muted-foreground">/mo</span>
             </div>
             <p className="mt-2 h-10 text-sm text-muted-foreground">{plan.description}</p>
@@ -76,8 +75,12 @@ export function BillingPanel({ user, currentPlan }: BillingPanelProps) {
             <div className="my-6 flex-1 space-y-3">
               <div className="flex items-center gap-2 text-sm text-foreground">
                 <Check className="h-4 w-4 text-primary" />
+                <span>{plan.seats} Team Seat{plan.seats > 1 ? 's' : ''}</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-foreground">
+                <Check className="h-4 w-4 text-primary" />
                 <span>
-                  {plan.leadLimit ? `${plan.leadLimit} Leads/mo` : 'Unlimited Leads'}
+                  {plan.leadLimit ? `${plan.leadLimit.toLocaleString()} Leads/mo` : 'Unlimited Leads'}
                 </span>
               </div>
               <div className="flex items-center gap-2 text-sm text-foreground">
@@ -88,9 +91,13 @@ export function BillingPanel({ user, currentPlan }: BillingPanelProps) {
                     : 'Unlimited Automations'}
                 </span>
               </div>
+              <div className="flex items-center gap-2 text-sm text-green-600">
+                <Check className="h-4 w-4" />
+                <span>${plan.successFee} per Accepted Proposal</span>
+              </div>
             </div>
 
-            {isCurrent && !isFree ? (
+            {isCurrent ? (
               <button
                 onClick={handleManage}
                 disabled={isPending}
@@ -98,20 +105,13 @@ export function BillingPanel({ user, currentPlan }: BillingPanelProps) {
               >
                 Manage Subscription
               </button>
-            ) : isCurrent ? (
-              <button
-                disabled
-                className="w-full cursor-default rounded-xl bg-muted py-3 text-sm font-semibold text-muted-foreground"
-              >
-                Active Plan
-              </button>
             ) : (
               <button
                 onClick={() => handleUpgrade(plan.id)}
                 disabled={isPending}
                 className="flex w-full justify-center rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Upgrade'}
+                {isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Get Started'}
               </button>
             )}
           </div>

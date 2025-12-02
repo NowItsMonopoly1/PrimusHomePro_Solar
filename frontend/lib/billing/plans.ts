@@ -1,7 +1,7 @@
 // PRIMUS HOME PRO - Billing Plans Configuration
 // Source of truth for pricing and plan limits
 
-export type SubscriptionPlan = 'free' | 'pro' | 'agency'
+export type SubscriptionPlan = 'starter' | 'pro' | 'agency'
 
 export interface PlanConfig {
   id: SubscriptionPlan
@@ -9,35 +9,43 @@ export interface PlanConfig {
   description: string
   priceMonthly: number
   stripePriceId: string
+  seats: number
+  successFee: number // Per accepted proposal
   leadLimit: number | null // null = unlimited
   automationLimit: number | null
 }
 
 export const PLANS: PlanConfig[] = [
   {
-    id: 'free',
-    name: 'Free Tier',
-    description: 'Test the engine. Perfect for new accounts.',
-    priceMonthly: 0,
-    stripePriceId: '',
-    leadLimit: 50,
-    automationLimit: 1,
+    id: 'starter',
+    name: 'Starter',
+    description: 'Perfect for individual contractors.',
+    priceMonthly: 198,
+    stripePriceId: process.env.STRIPE_PRICE_STARTER || '',
+    seats: 1,
+    successFee: 88, // $88 per accepted proposal
+    leadLimit: 500,
+    automationLimit: 5,
   },
   {
     id: 'pro',
     name: 'Pro',
-    description: 'For solo operators & small teams.',
-    priceMonthly: 48, // Matches your Stripe product price
-    stripePriceId: process.env.STRIPE_PRICE_PRO || 'price_1SZ1ii05lmCbSdUDS1cX1OW8',
-    leadLimit: 1000,
+    description: 'For growing teams with multiple reps.',
+    priceMonthly: 498,
+    stripePriceId: process.env.STRIPE_PRICE_PRO || '',
+    seats: 5,
+    successFee: 68, // $68 per accepted proposal
+    leadLimit: 2000,
     automationLimit: null, // unlimited
   },
   {
     id: 'agency',
     name: 'Agency',
-    description: 'For scaling businesses.',
-    priceMonthly: 148, // Matches your Stripe product price
-    stripePriceId: process.env.STRIPE_PRICE_AGENCY || 'price_1SZ1l005lmCbSdUDzc20PR2E',
+    description: 'For scaling businesses & multi-location operations.',
+    priceMonthly: 1198,
+    stripePriceId: process.env.STRIPE_PRICE_AGENCY || '',
+    seats: 10,
+    successFee: 48, // $48 per accepted proposal
     leadLimit: null, // unlimited
     automationLimit: null, // unlimited
   },
