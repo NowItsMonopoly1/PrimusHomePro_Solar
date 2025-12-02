@@ -4,13 +4,19 @@
 // Plan selection and upgrade interface
 
 import { useTransition } from 'react'
-import { User } from '@prisma/client'
 import { PLANS, type PlanConfig } from '@/lib/billing/plans'
 import { createCheckoutSession, createPortalSession } from '@/lib/actions/billing'
 import { Check, Loader2 } from 'lucide-react'
 
+// Define User type inline to avoid Prisma import issues on Vercel
+interface BillingUser {
+  id: string
+  subscriptionPlan: string | null
+  subscriptionStatus: string | null
+}
+
 interface BillingPanelProps {
-  user: User
+  user: BillingUser
   currentPlan: PlanConfig
 }
 

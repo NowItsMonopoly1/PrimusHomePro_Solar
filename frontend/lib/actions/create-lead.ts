@@ -127,7 +127,7 @@ export async function createLead(
 
     return {
       success: true,
-      data: lead,
+      data: lead as Lead,
     }
   } catch (error) {
     console.error('Error creating lead:', error)

@@ -1,10 +1,86 @@
 // PRIMUS HOME PRO - Type Definitions
 // Centralized TypeScript types and interfaces
+// NOTE: Types are defined explicitly to avoid Prisma import issues on Vercel
 
-import { Lead, LeadEvent, User, Automation, SiteSurvey } from '@prisma/client'
+// Base Types (defined explicitly, not imported from Prisma)
+export interface Lead {
+  id: string
+  userId: string
+  companyId: string | null
+  assignedUserId: string | null
+  name: string | null
+  email: string | null
+  phone: string | null
+  address: string | null
+  source: string | null
+  score: number
+  stage: string
+  intent: string | null
+  sentiment: string | null
+  notes: string | null
+  metadata: unknown
+  roofPitch: number | null
+  maxPanelsCount: number | null
+  maxSunshineHoursYear: number | null
+  annualKwhProduction: number | null
+  carbonOffsetKg: number | null
+  siteSuitability: string | null
+  solarEnriched: boolean
+  solarEnrichedAt: Date | null
+  createdAt: Date
+  updatedAt: Date
+}
 
-// Re-export Prisma types
-export type { Lead, LeadEvent, User, Automation, SiteSurvey }
+export interface LeadEvent {
+  id: string
+  leadId: string
+  type: string
+  content: string | null
+  metadata: unknown
+  payload: unknown
+  createdAt: Date
+}
+
+export interface User {
+  id: string
+  clerkId: string
+  email: string
+  name: string | null
+  stripeCustomer: string | null
+  subscriptionPlan: string | null
+  subscriptionStatus: string | null
+  subscriptionCurrentEnd: Date | null
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface Automation {
+  id: string
+  userId: string
+  companyId: string | null
+  name: string
+  trigger: string
+  action: string
+  template: string
+  enabled: boolean
+  config: unknown
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface SiteSurvey {
+  id: string
+  leadId: string
+  systemSizeKW: number | null
+  annualKwhProduction: number | null
+  panelCount: number | null
+  roofAreaSqFt: number | null
+  sunshineHours: number | null
+  carbonOffset: number | null
+  rawApiResponse: unknown
+  createdAt: Date
+  updatedAt: Date
+}
 
 // Extended types with relations
 export type LeadWithEvents = Lead & {
