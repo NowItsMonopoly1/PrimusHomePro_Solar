@@ -2,7 +2,7 @@
 // Server-side queries for automation management
 
 import { prisma } from '@/lib/db/prisma'
-import type { AutomationWithConfig } from '@/types'
+import type { AutomationWithConfig, Automation } from '@/types'
 
 /**
  * Get all automations for a user with typed config
@@ -15,7 +15,7 @@ export async function getAutomationsForUser(
     orderBy: { createdAt: 'asc' },
   })
 
-  return automations.map((automation) => ({
+  return automations.map((automation: Automation) => ({
     ...automation,
     config: (automation.config as any) || {},
   })) as AutomationWithConfig[]
