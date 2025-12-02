@@ -208,3 +208,4 @@ For support, email your-email@example.com or contact via Twilio.
 ---
 
 **Built with ❤️ for PrimusHomePro**
+# Primus Home Pro Solar OS
