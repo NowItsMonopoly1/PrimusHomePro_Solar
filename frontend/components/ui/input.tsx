@@ -8,10 +8,11 @@ export interface InputProps
   extends React.InputHTMLAttributes<HTMLInputElement> {
   error?: string
   label?: string
+  variant?: 'default' | 'solar'
 }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, error, label, ...props }, ref) => {
+  ({ className, type, error, label, variant = 'default', ...props }, ref) => {
     return (
       <div className="w-full">
         {label && (

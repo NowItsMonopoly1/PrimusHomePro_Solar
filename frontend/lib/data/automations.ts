@@ -15,7 +15,7 @@ export async function getAutomationsForUser(
     orderBy: { createdAt: 'asc' },
   })
 
-  return automations.map((automation: Automation) => ({
+  return automations.map((automation) => ({
     ...automation,
     config: (automation.config as any) || {},
   })) as AutomationWithConfig[]
