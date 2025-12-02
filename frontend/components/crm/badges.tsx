@@ -1,14 +1,26 @@
 // PRIMUS HOME PRO - CRM Badge Components
-// Solar-branded status indicators with consistent styling
+// M.P.A. (Modern Professional Aesthetic) status indicators
 
 import { cn } from '@/lib/utils/cn'
 
 export function ScoreBadge({ score }: { score: number }) {
   const getScoreConfig = (score: number) => {
-    if (score >= 80) return { color: 'bg-solar-success/15 text-solar-success border-solar-success/30', label: 'Hot' }
-    if (score >= 60) return { color: 'bg-solar-primary/15 text-solar-primary-dark border-solar-primary/30', label: 'Warm' }
-    if (score >= 40) return { color: 'bg-amber-500/15 text-amber-600 border-amber-500/30', label: 'Cool' }
-    return { color: 'bg-solar-gray-200 text-solar-gray-600 border-solar-gray-300', label: 'Cold' }
+    if (score >= 80) return { 
+      color: 'bg-solar-success text-white', 
+      label: 'Hot' 
+    }
+    if (score >= 60) return { 
+      color: 'bg-solar-primary text-white', 
+      label: 'Warm' 
+    }
+    if (score >= 40) return { 
+      color: 'bg-solar-primary-light/20 text-solar-primary-dark', 
+      label: 'Cool' 
+    }
+    return { 
+      color: 'bg-solar-gray-100 text-solar-gray-600', 
+      label: 'Cold' 
+    }
   }
 
   const config = getScoreConfig(score)
@@ -16,12 +28,12 @@ export function ScoreBadge({ score }: { score: number }) {
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-full border-2 px-3 py-1 text-sm font-bold transition-all duration-200',
+        'inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition-all duration-200',
         config.color
       )}
     >
-      <span className="text-base">{score}</span>
-      <span className="text-xs font-medium opacity-75">{config.label}</span>
+      <span className="text-base font-bold">{score}</span>
+      <span className="text-xs font-medium opacity-90">{config.label}</span>
     </span>
   )
 }
@@ -33,7 +45,7 @@ export function IntentBadge({ intent }: { intent: string }) {
     <span
       className={cn(
         'text-sm font-semibold transition-colors',
-        isHot ? 'text-solar-primary-dark' : 'text-solar-gray-600'
+        isHot ? 'text-solar-primary font-bold' : 'text-solar-gray-600'
       )}
     >
       {isHot && '🔥 '}{intent}
@@ -43,14 +55,14 @@ export function IntentBadge({ intent }: { intent: string }) {
 
 export function StageBadge({ stage }: { stage: string }) {
   const colors: Record<string, string> = {
-    New: 'bg-solar-secondary/15 text-solar-secondary border-solar-secondary/30',
-    Contacted: 'bg-amber-500/15 text-amber-600 border-amber-500/30',
-    Qualified: 'bg-solar-primary/15 text-solar-primary-dark border-solar-primary/30',
-    Proposal: 'bg-purple-500/15 text-purple-600 border-purple-500/30',
-    Negotiation: 'bg-indigo-500/15 text-indigo-600 border-indigo-500/30',
-    Closed: 'bg-solar-success/15 text-solar-success-dark border-solar-success/30',
-    Won: 'bg-solar-success/15 text-solar-success-dark border-solar-success/30',
-    Lost: 'bg-solar-danger/15 text-solar-danger border-solar-danger/30',
+    New: 'bg-solar-secondary text-white',
+    Contacted: 'bg-solar-primary-light/20 text-solar-primary-dark',
+    Qualified: 'bg-solar-primary text-white',
+    Proposal: 'bg-purple-600 text-white',
+    Negotiation: 'bg-indigo-600 text-white',
+    Closed: 'bg-solar-success text-white',
+    Won: 'bg-solar-success text-white',
+    Lost: 'bg-solar-danger text-white',
   }
 
   const icons: Record<string, string> = {
@@ -67,8 +79,8 @@ export function StageBadge({ stage }: { stage: string }) {
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-lg border-2 px-3 py-1.5 text-sm font-bold shadow-sm transition-all duration-200 hover:shadow-md',
-        colors[stage] || 'bg-solar-gray-100 text-solar-gray-700 border-solar-gray-200'
+        'inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold shadow-sm transition-all duration-200 hover:shadow-md',
+        colors[stage] || 'bg-solar-gray-100 text-solar-gray-700'
       )}
     >
       <span>{icons[stage] || '📌'}</span>
@@ -79,9 +91,9 @@ export function StageBadge({ stage }: { stage: string }) {
 
 export function SentimentBadge({ sentiment }: { sentiment: string }) {
   const colors: Record<string, string> = {
-    Positive: 'text-solar-success font-bold',
+    Positive: 'text-solar-success font-semibold',
     Neutral: 'text-solar-gray-500',
-    Negative: 'text-solar-danger font-bold',
+    Negative: 'text-solar-danger font-semibold',
   }
 
   const icons: Record<string, string> = {
@@ -91,7 +103,7 @@ export function SentimentBadge({ sentiment }: { sentiment: string }) {
   }
 
   return (
-    <span className={cn('inline-flex items-center gap-1 text-sm', colors[sentiment] || 'text-solar-gray-500')}>
+    <span className={cn('inline-flex items-center gap-1.5 text-sm', colors[sentiment] || 'text-solar-gray-500')}>
       <span>{icons[sentiment] || '😐'}</span>
       <span>{sentiment}</span>
     </span>
@@ -101,17 +113,17 @@ export function SentimentBadge({ sentiment }: { sentiment: string }) {
 export function SolarBadge({ suitability }: { suitability: string }) {
   const config: Record<string, { color: string; label: string; icon: string }> = {
     VIABLE: {
-      color: 'bg-solar-success/15 text-solar-success-dark border-solar-success/30 shadow-sm',
+      color: 'bg-solar-success text-white shadow-sm',
       label: 'Solar Ready',
       icon: '☀️',
     },
     CHALLENGING: {
-      color: 'bg-solar-primary/15 text-solar-primary-dark border-solar-primary/30 shadow-sm',
+      color: 'bg-solar-primary text-white shadow-sm',
       label: 'Needs Review',
       icon: '🌤️',
     },
     NOT_VIABLE: {
-      color: 'bg-solar-danger/15 text-solar-danger border-solar-danger/30',
+      color: 'bg-solar-danger text-white',
       label: 'Not Suitable',
       icon: '☁️',
     },
@@ -122,7 +134,7 @@ export function SolarBadge({ suitability }: { suitability: string }) {
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-lg border-2 px-3 py-1.5 text-sm font-bold transition-all duration-200',
+        'inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition-all duration-200',
         color
       )}
     >
@@ -132,21 +144,21 @@ export function SolarBadge({ suitability }: { suitability: string }) {
   )
 }
 
-// New priority badge for high-value leads
+// Priority badge for high-value leads
 export function PriorityBadge({ priority }: { priority: 'high' | 'medium' | 'low' }) {
   const config: Record<string, { color: string; label: string; icon: string }> = {
     high: {
-      color: 'bg-solar-danger/15 text-solar-danger border-solar-danger/30 animate-pulse',
+      color: 'bg-solar-danger text-white animate-pulse',
       label: 'High Priority',
       icon: '🚨',
     },
     medium: {
-      color: 'bg-solar-primary/15 text-solar-primary-dark border-solar-primary/30',
+      color: 'bg-solar-primary text-white',
       label: 'Medium',
       icon: '⚡',
     },
     low: {
-      color: 'bg-solar-gray-100 text-solar-gray-600 border-solar-gray-200',
+      color: 'bg-solar-gray-100 text-solar-gray-600',
       label: 'Low',
       icon: '📋',
     },
@@ -157,7 +169,7 @@ export function PriorityBadge({ priority }: { priority: 'high' | 'medium' | 'low
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-lg border-2 px-3 py-1 text-sm font-bold',
+        'inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold',
         color
       )}
     >

@@ -42,38 +42,39 @@ const config: Config = {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
         },
-        // Solar brand colors
+        // M.P.A. (Modern Professional Aesthetic) Brand Colors
         'solar-primary': {
-          DEFAULT: '#FFB800',
-          light: '#FFD700',
-          dark: '#CC9300',
+          DEFAULT: '#F59E0B',  // Amber - Trust & Energy
+          light: '#FBBF24',
+          dark: '#D97706',
         },
         'solar-secondary': {
-          DEFAULT: '#1A437C',
-          light: '#2E6B9B',
-          dark: '#0F2C5C',
+          DEFAULT: '#1E40AF',  // Deep Blue - Authority & Trust
+          light: '#3B82F6',
+          dark: '#1E3A8A',
         },
         'solar-success': {
-          DEFAULT: '#28A745',
-          dark: '#218838',
+          DEFAULT: '#059669',  // Emerald - Profit & Growth
+          light: '#10B981',
+          dark: '#047857',
         },
         'solar-danger': {
-          DEFAULT: '#DC3545',
-          dark: '#C82333',
+          DEFAULT: '#DC2626',  // Red - Alerts
+          dark: '#B91C1C',
         },
         'solar-gray': {
-          50: '#F8F9FA',
-          100: '#F1F3F5',
-          200: '#E9ECEF',
-          300: '#DEE2E6',
-          400: '#CED4DA',
-          500: '#ADB5BD',
-          600: '#6C757D',
-          700: '#495057',
-          800: '#343A40',
-          900: '#212529',
+          50: '#FAFAFA',
+          100: '#F4F4F5',
+          200: '#E4E4E7',
+          300: '#D4D4D8',
+          400: '#A1A1AA',
+          500: '#71717A',
+          600: '#52525B',
+          700: '#3F3F46',
+          800: '#27272A',
+          900: '#18181B',
         },
-        'solar-bg': '#F8F9FA',
+        'solar-bg': '#FAFAFA',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],

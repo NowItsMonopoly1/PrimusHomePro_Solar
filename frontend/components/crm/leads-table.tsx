@@ -1,7 +1,7 @@
 'use client'
 
 // PRIMUS HOME PRO - Leads Table Component
-// Interactive data grid with solar-branded styling
+// M.P.A. (Modern Professional Aesthetic) data grid
 
 import { useState } from 'react'
 import {
@@ -28,7 +28,7 @@ export function LeadsTable({ initialLeads }: LeadsTableProps) {
       accessorKey: 'name',
       cell: ({ row }) => (
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-solar-secondary to-solar-secondary-dark rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md">
+          <div className="w-10 h-10 bg-solar-secondary rounded-full flex items-center justify-center text-white font-semibold text-sm">
             {(row.original.name || 'A').charAt(0).toUpperCase()}
           </div>
           <div>
@@ -79,7 +79,7 @@ export function LeadsTable({ initialLeads }: LeadsTableProps) {
       header: 'Source',
       accessorKey: 'source',
       cell: ({ row }) => (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-solar-secondary/10 text-solar-secondary text-xs font-semibold rounded-lg">
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-solar-secondary/10 text-solar-secondary text-xs font-medium rounded-lg">
           {row.original.source}
         </span>
       ),
@@ -107,7 +107,7 @@ export function LeadsTable({ initialLeads }: LeadsTableProps) {
             e.stopPropagation()
             setSelectedLead(row.original)
           }}
-          className="p-2 text-solar-gray-400 hover:text-solar-secondary hover:bg-solar-secondary/10 rounded-lg transition-colors"
+          className="p-2 text-solar-gray-400 hover:text-solar-primary hover:bg-solar-primary/10 rounded-lg transition-colors"
           aria-label="View lead details"
         >
           <ExternalLink className="w-4 h-4" />
@@ -124,13 +124,13 @@ export function LeadsTable({ initialLeads }: LeadsTableProps) {
 
   return (
     <>
-      <div className="overflow-hidden rounded-2xl border-2 border-solar-gray-200 bg-white solar-card-shadow-lg">
+      <div className="overflow-hidden rounded-xl border border-solar-gray-100 bg-white shadow-md">
         <table className="w-full text-left">
-          <thead className="border-b-2 border-solar-gray-100 bg-solar-gray-50">
+          <thead className="border-b border-solar-gray-100 bg-solar-gray-50">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
-                  <th key={header.id} className="px-5 py-4 text-xs font-bold uppercase tracking-wider text-solar-gray-600">
+                  <th key={header.id} className="px-5 py-4 text-xs font-semibold uppercase tracking-wider text-solar-gray-500">
                     {flexRender(
                       header.column.columnDef.header,
                       header.getContext()
@@ -140,7 +140,7 @@ export function LeadsTable({ initialLeads }: LeadsTableProps) {
               </tr>
             ))}
           </thead>
-          <tbody className="divide-y divide-solar-gray-100">
+          <tbody className="divide-y divide-solar-gray-50">
             {table.getRowModel().rows.length === 0 && (
               <tr>
                 <td
@@ -151,8 +151,8 @@ export function LeadsTable({ initialLeads }: LeadsTableProps) {
                     <div className="w-16 h-16 bg-solar-gray-100 rounded-full flex items-center justify-center">
                       <User className="w-8 h-8 text-solar-gray-400" />
                     </div>
-                    <h3 className="text-lg font-bold text-solar-gray-700">No leads yet</h3>
-                    <p className="text-solar-gray-500 max-w-sm">
+                    <h3 className="text-lg font-semibold text-solar-gray-700">No leads yet</h3>
+                    <p className="text-solar-gray-500 text-sm max-w-sm">
                       Capture your first lead from a landing page or add one manually to get started.
                     </p>
                   </div>
@@ -163,7 +163,7 @@ export function LeadsTable({ initialLeads }: LeadsTableProps) {
               <tr
                 key={row.id}
                 onClick={() => setSelectedLead(row.original)}
-                className="cursor-pointer transition-all duration-200 hover:bg-solar-primary/5 group"
+                className="cursor-pointer transition-colors duration-150 hover:bg-solar-gray-50 group"
               >
                 {row.getVisibleCells().map((cell) => (
                   <td key={cell.id} className="px-5 py-4">

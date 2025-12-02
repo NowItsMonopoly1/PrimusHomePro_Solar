@@ -1,5 +1,5 @@
 // PRIMUS HOME PRO - Dashboard Layout
-// Protected layout with solar-branded navigation
+// M.P.A. (Modern Professional Aesthetic) protected layout
 
 export const dynamic = 'force-dynamic'
 
@@ -14,14 +14,14 @@ export default function DashboardLayout({
 }) {
   return (
     <div className="flex min-h-screen">
-      {/* Sidebar */}
-      <aside className="hidden lg:flex lg:flex-col lg:w-64 bg-gradient-to-b from-solar-secondary to-solar-secondary-dark text-white fixed inset-y-0 left-0 z-50">
+      {/* Sidebar - M.P.A. Dark Gray with Amber Accent */}
+      <aside className="hidden lg:flex lg:flex-col lg:w-64 bg-gray-900 text-white fixed inset-y-0 left-0 z-50">
         {/* Logo */}
-        <div className="flex items-center gap-3 px-6 py-5 border-b border-white/10">
-          <div className="w-10 h-10 solar-gradient rounded-xl flex items-center justify-center shadow-lg">
-            <Sun className="w-6 h-6 text-solar-gray-900" />
+        <div className="flex items-center gap-3 px-6 py-5 border-b border-gray-800">
+          <div className="w-10 h-10 bg-solar-primary rounded-xl flex items-center justify-center">
+            <Sun className="w-6 h-6 text-white" />
           </div>
-          <span className="text-xl font-bold">Primus<span className="text-solar-primary">Solar</span></span>
+          <span className="text-xl font-semibold">Primus<span className="text-solar-primary">Solar</span></span>
         </div>
         
         {/* Navigation */}
@@ -32,22 +32,22 @@ export default function DashboardLayout({
           <NavLink href="/dashboard/automations" icon={<Zap />} label="Automations" />
           <NavLink href="/dashboard/inbox" icon={<Inbox />} label="Inbox" />
           
-          <div className="pt-6 mt-6 border-t border-white/10">
-            <p className="px-3 text-xs font-semibold text-white/40 uppercase tracking-wider mb-3">Account</p>
+          <div className="pt-6 mt-6 border-t border-gray-800">
+            <p className="px-3 text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">Account</p>
             <NavLink href="/dashboard/billing" icon={<CreditCard />} label="Billing" />
             <NavLink href="/dashboard/settings" icon={<Settings />} label="Settings" />
           </div>
         </nav>
         
         {/* Upgrade Card */}
-        <div className="p-4 m-4 bg-white/10 backdrop-blur-sm rounded-xl border border-white/10">
+        <div className="p-4 m-4 bg-gray-800 rounded-xl border border-gray-700">
           <div className="flex items-center gap-2 mb-2">
             <Zap className="w-5 h-5 text-solar-primary" />
             <span className="font-semibold text-sm">Upgrade to Pro</span>
           </div>
-          <p className="text-xs text-white/70 mb-3">Get unlimited leads and advanced AI features.</p>
+          <p className="text-xs text-gray-400 mb-3">Get unlimited leads and advanced AI features.</p>
           <Link href="/dashboard/billing">
-            <button className="w-full py-2 text-sm font-bold text-solar-gray-900 solar-gradient rounded-lg hover:shadow-lg transition-all duration-200">
+            <button className="w-full py-2 text-sm font-semibold text-white bg-solar-primary hover:bg-solar-primary-dark rounded-lg transition-all duration-200">
               Upgrade Now
             </button>
           </Link>
@@ -56,15 +56,15 @@ export default function DashboardLayout({
 
       {/* Main Content Area */}
       <div className="flex-1 lg:ml-64">
-        {/* Top Header */}
-        <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-solar-gray-200">
+        {/* Top Header - M.P.A. Clean */}
+        <header className="sticky top-0 z-40 bg-white border-b border-solar-gray-100">
           <div className="flex h-16 items-center justify-between px-6">
             {/* Mobile Logo */}
             <div className="lg:hidden flex items-center gap-2">
-              <div className="w-8 h-8 solar-gradient rounded-lg flex items-center justify-center">
-                <Sun className="w-5 h-5 text-solar-gray-900" />
+              <div className="w-8 h-8 bg-solar-primary rounded-lg flex items-center justify-center">
+                <Sun className="w-5 h-5 text-white" />
               </div>
-              <span className="font-bold text-solar-secondary">Primus<span className="text-solar-primary">Solar</span></span>
+              <span className="font-semibold text-solar-gray-900">Primus<span className="text-solar-primary">Solar</span></span>
             </div>
             
             {/* Search Bar */}
@@ -74,7 +74,7 @@ export default function DashboardLayout({
                 <input 
                   type="text" 
                   placeholder="Search leads, projects..." 
-                  className="w-full pl-10 pr-4 py-2 bg-solar-gray-50 border border-solar-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-solar-primary focus:border-solar-primary transition-all"
+                  className="w-full pl-10 pr-4 py-2 bg-solar-gray-50 border border-solar-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-solar-primary focus:border-transparent transition-all"
                 />
               </div>
             </div>
@@ -82,7 +82,7 @@ export default function DashboardLayout({
             {/* Right Actions */}
             <div className="flex items-center gap-4">
               <button 
-                className="relative p-2 text-solar-gray-500 hover:text-solar-secondary hover:bg-solar-gray-100 rounded-lg transition-colors"
+                className="relative p-2 text-solar-gray-500 hover:text-solar-gray-900 hover:bg-solar-gray-100 rounded-lg transition-colors"
                 aria-label="Notifications"
               >
                 <Bell className="w-5 h-5" />
@@ -92,7 +92,7 @@ export default function DashboardLayout({
                 afterSignOutUrl="/" 
                 appearance={{
                   elements: {
-                    avatarBox: "w-9 h-9 ring-2 ring-solar-primary/20"
+                    avatarBox: "w-9 h-9 ring-2 ring-solar-gray-100"
                   }
                 }}
               />
@@ -116,12 +116,12 @@ export default function DashboardLayout({
   )
 }
 
-// Sidebar Navigation Link Component
+// Sidebar Navigation Link Component - M.P.A. with Amber Accent Border
 function NavLink({ href, icon, label }: { href: string; icon: React.ReactNode; label: string }) {
   return (
     <Link
       href={href}
-      className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200 group"
+      className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-gray-400 hover:text-white hover:bg-gray-800 border-l-2 border-transparent hover:border-solar-primary rounded-r-lg transition-all duration-200 group"
     >
       <span className="w-5 h-5 opacity-70 group-hover:opacity-100 transition-opacity">{icon}</span>
       {label}
@@ -134,7 +134,7 @@ function MobileNavLink({ href, label }: { href: string; label: string }) {
   return (
     <Link
       href={href}
-      className="px-4 py-1.5 text-sm font-medium text-solar-gray-600 hover:text-solar-secondary hover:bg-solar-gray-100 rounded-full whitespace-nowrap transition-colors"
+      className="px-4 py-1.5 text-sm font-medium text-solar-gray-600 hover:text-solar-primary hover:bg-solar-gray-100 rounded-full whitespace-nowrap transition-colors"
     >
       {label}
     </Link>
