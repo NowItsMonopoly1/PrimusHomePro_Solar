@@ -1,5 +1,5 @@
 // PRIMUS HOME PRO - Dashboard Home
-// Solar-branded overview and quick stats
+// Solar-branded overview and quick stats (Contract v1.0 Aligned)
 
 export const dynamic = 'force-dynamic'
 
@@ -18,11 +18,12 @@ export default async function DashboardPage() {
     redirect('/sign-in')
   }
 
-  const user = await prisma.user.findUnique({
+  // Contract v1.0: Use Agent model instead of User
+  const agent = await prisma.agent.findUnique({
     where: { clerkId: clerkUserId },
   })
 
-  if (!user) {
+  if (!agent) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-solar-bg">
         <div className="text-center">
@@ -35,16 +36,16 @@ export default async function DashboardPage() {
     )
   }
 
-  // Get stats
-  const totalLeads = await prisma.lead.count({ where: { userId: user.id } })
+  // Get stats (Contract v1.0: use agentId and status field)
+  const totalLeads = await prisma.lead.count({ where: { agentId: agent.id } })
   const newLeads = await prisma.lead.count({
-    where: { userId: user.id, stage: 'New' },
+    where: { agentId: agent.id, status: 'new' },
   })
   const qualifiedLeads = await prisma.lead.count({
-    where: { userId: user.id, stage: 'Qualified' },
+    where: { agentId: agent.id, status: 'qualified' },
   })
-  const closedLeads = await prisma.lead.count({
-    where: { userId: user.id, stage: 'Closed' },
+  const soldLeads = await prisma.lead.count({
+    where: { agentId: agent.id, status: 'sold' },
   })
 
   const stats = [
@@ -74,7 +75,7 @@ export default async function DashboardPage() {
     },
     {
       title: 'Closed Deals',
-      value: closedLeads,
+      value: soldLeads,
       icon: CheckCircle,
       description: 'Won this month',
       gradient: 'from-solar-success to-emerald-500',
@@ -88,7 +89,7 @@ export default async function DashboardPage() {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-3xl md:text-4xl font-black text-solar-gray-900">
-            Welcome back, <span className="text-solar-secondary">{user.name?.split(' ')[0] || 'there'}</span> 👋
+            Welcome back, <span className="text-solar-secondary">{agent.name?.split(' ')[0] || 'there'}</span> 👋
           </h1>
           <p className="mt-2 text-lg text-solar-gray-600">
             Here's what's happening with your solar leads today.

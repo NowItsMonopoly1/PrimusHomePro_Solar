@@ -1,72 +1,54 @@
 // DOMAIN: Proposals - Generate Proposal
-// Pure business logic - proposal calculations
+// Pure business logic - NO DB, NO API, NO side effects
 
-export interface ProposalInput {
+import { SavingsModel, PricingConfig, calculateSavingsModel } from './calculate-savings-model';
+import { SolarQualification } from '../solar';
+
+export interface ProposalRequest {
   leadId: string;
-  systemSizeKw: number;
-  annualProductionKwh: number;
-  currentElectricBill: number; // Monthly bill
-  utilityRatePerKwh: number;
-  installCostPerWatt: number;
+  qualification: SolarQualification;
+  pricingConfig: PricingConfig;
+  currentMonthlyBill: number;
 }
 
 export interface Proposal {
-  id: string;
   leadId: string;
+  savings: SavingsModel;
   systemSizeKw: number;
-  totalCost: number;
-  federalTaxCredit: number; // 30%
-  netCost: number;
-  monthlyPayment: number; // If financed
-  estimatedSavingsYear1: number;
-  estimatedSavings25Year: number;
-  breakEvenYear: number;
-  createdAt: Date;
+  grossCost: number;
+  netCostAfterIncentives: number;
+  breakEvenYears: number;
+  estimatedAnnualSavings: number;
 }
 
 /**
  * Generate a solar proposal with financial calculations
- * 
- * Business Rules (per Master Spec v2.0):
- * - Federal ITC: 30% of system cost
- * - Utility rate escalation: 3% annually
- * - Solar degradation: 0.7% annually
- * - Financing: 6.99% APR, 20-year term (if applicable)
+ * Pure function - all inputs provided, deterministic output
  */
-export async function generateProposal(input: ProposalInput): Promise<Proposal> {
-  const systemSizeWatts = input.systemSizeKw * 1000;
-  const totalCost = systemSizeWatts * input.installCostPerWatt;
-  const federalTaxCredit = totalCost * 0.30; // 30% ITC
-  const netCost = totalCost - federalTaxCredit;
-  
-  // Assume 20-year financing at 6.99% APR
-  const monthlyRate = 0.0699 / 12;
-  const numPayments = 20 * 12;
-  const monthlyPayment = 
-    (netCost * monthlyRate * Math.pow(1 + monthlyRate, numPayments)) /
-    (Math.pow(1 + monthlyRate, numPayments) - 1);
-  
-  // Year 1 savings
-  const currentAnnualCost = input.currentElectricBill * 12;
-  const estimatedSavingsYear1 = currentAnnualCost - (monthlyPayment * 12);
-  
-  // 25-year savings (simplified)
-  const estimatedSavings25Year = estimatedSavingsYear1 * 25 * 0.8; // Rough estimate
-  
-  // Break-even year (simplified)
-  const breakEvenYear = Math.ceil(netCost / estimatedSavingsYear1);
-  
+export function generateProposal(request: ProposalRequest): Proposal {
+  const { leadId, qualification, pricingConfig, currentMonthlyBill } = request;
+
+  // Calculate savings model using pure function
+  const savings = calculateSavingsModel(
+    { estAnnualProductionKwh: qualification.estAnnualProductionKwh },
+    pricingConfig
+  );
+
+  // Annual savings = (current bill × 12) offset by solar, minus loan payments
+  const estimatedAnnualSavings = savings.estMonthlySavings * 12;
+
+  // Break-even calculation (years to recoup net cost via savings)
+  const breakEvenYears = estimatedAnnualSavings > 0
+    ? Math.ceil(savings.netCostAfterIncentives / (currentMonthlyBill * 12 * 0.8))
+    : 99;
+
   return {
-    id: `proposal_${Date.now()}`,
-    leadId: input.leadId,
-    systemSizeKw: input.systemSizeKw,
-    totalCost,
-    federalTaxCredit,
-    netCost,
-    monthlyPayment: Math.round(monthlyPayment),
-    estimatedSavingsYear1: Math.round(estimatedSavingsYear1),
-    estimatedSavings25Year: Math.round(estimatedSavings25Year),
-    breakEvenYear,
-    createdAt: new Date(),
+    leadId,
+    savings,
+    systemSizeKw: savings.estSystemSizeKw,
+    grossCost: savings.grossCost,
+    netCostAfterIncentives: savings.netCostAfterIncentives,
+    breakEvenYears: Math.min(breakEvenYears, 25),
+    estimatedAnnualSavings: Math.round(estimatedAnnualSavings),
   };
 }

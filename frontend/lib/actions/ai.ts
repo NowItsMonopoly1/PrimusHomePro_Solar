@@ -1,6 +1,6 @@
 'use server'
 
-// PRIMUS HOME PRO - AI Server Actions
+// PRIMUS HOME PRO - AI Server Actions (Contract v1.0 Aligned)
 // Triggers AI reply generation and sending
 
 import { generateLeadReply } from '@/lib/ai/service'
@@ -35,7 +35,7 @@ export async function draftLeadReply(
 
 /**
  * Send reply to lead
- * Real Twilio SMS + Resend Email Integration
+ * Contract v1.0: Uses Message model (no metadata field)
  */
 export async function sendLeadReply(
   leadId: string,
@@ -46,7 +46,7 @@ export async function sendLeadReply(
     // Fetch lead with contact info
     const lead = await prisma.lead.findUnique({
       where: { id: leadId },
-      select: { id: true, name: true, email: true, phone: true, userId: true },
+      select: { id: true, name: true, email: true, phone: true, agentId: true },
     })
 
     if (!lead) {
@@ -59,60 +59,47 @@ export async function sendLeadReply(
         return { success: false, error: 'Lead has no phone number' }
       }
 
-      // Check for Twilio credentials
       const twilioAccountSid = process.env.TWILIO_ACCOUNT_SID
       const twilioAuthToken = process.env.TWILIO_AUTH_TOKEN
       const twilioPhoneNumber = process.env.TWILIO_PHONE_NUMBER
 
       if (!twilioAccountSid || !twilioAuthToken || !twilioPhoneNumber) {
         console.warn('[SMS] Twilio credentials missing. SMS will be logged but not sent.')
-        console.warn('[SMS] Required env vars: TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER')
         
-        // Log event but mark as simulated
-        await prisma.leadEvent.create({
+        // Contract v1.0: Log as Message (no metadata field)
+        await prisma.message.create({
           data: {
             leadId,
-            type: 'SMS_SENT',
-            content: body,
-            metadata: {
-              channel: 'sms',
-              sentAt: new Date().toISOString(),
-              status: 'simulated',
-              warning: 'Twilio credentials not configured',
-            } as any,
+            direction: 'outbound',
+            channel: 'sms',
+            body: `[SIMULATED] ${body}`,
           },
         })
         
         return { 
           success: false, 
-          error: 'Twilio not configured. Please set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER environment variables.' 
+          error: 'Twilio not configured. Please set environment variables.' 
         }
       }
 
       try {
-        // Send real SMS via Twilio
         const twilio = require('twilio')(twilioAccountSid, twilioAuthToken)
-        const message = await twilio.messages.create({
+        const twilioMsg = await twilio.messages.create({
           from: twilioPhoneNumber,
           to: lead.phone,
           body: body,
         })
 
-        console.log(`[SMS] ✓ Sent to ${lead.phone} - SID: ${message.sid}`)
+        console.log(`[SMS] ✓ Sent to ${lead.phone} - SID: ${twilioMsg.sid}`)
 
-        // Log successful send
-        await prisma.leadEvent.create({
+        // Contract v1.0: Log as Message
+        await prisma.message.create({
           data: {
             leadId,
-            type: 'SMS_SENT',
-            content: body,
-            metadata: {
-              channel: 'sms',
-              sentAt: new Date().toISOString(),
-              status: 'delivered',
-              twilioSid: message.sid,
-              to: lead.phone,
-            } as any,
+            direction: 'outbound',
+            channel: 'sms',
+            body,
+            providerMessageId: twilioMsg.sid,
           },
         })
       } catch (twilioError: any) {
@@ -135,17 +122,12 @@ export async function sendLeadReply(
       if (!resendApiKey) {
         console.warn('[EMAIL] Resend API key missing. Email will be logged but not sent.')
         
-        await prisma.leadEvent.create({
+        await prisma.message.create({
           data: {
             leadId,
-            type: 'EMAIL_SENT',
-            content: body,
-            metadata: {
-              channel: 'email',
-              sentAt: new Date().toISOString(),
-              status: 'simulated',
-              warning: 'Resend API key not configured',
-            } as any,
+            direction: 'outbound',
+            channel: 'email',
+            body: `[SIMULATED] ${body}`,
           },
         })
         
@@ -156,7 +138,6 @@ export async function sendLeadReply(
       }
 
       try {
-        // Send real email via Resend
         const { Resend } = require('resend')
         const resend = new Resend(resendApiKey)
         
@@ -170,19 +151,14 @@ export async function sendLeadReply(
 
         console.log(`[EMAIL] ✓ Sent to ${lead.email} - ID: ${result.id}`)
 
-        // Log successful send
-        await prisma.leadEvent.create({
+        // Contract v1.0: Log as Message
+        await prisma.message.create({
           data: {
             leadId,
-            type: 'EMAIL_SENT',
-            content: body,
-            metadata: {
-              channel: 'email',
-              sentAt: new Date().toISOString(),
-              status: 'delivered',
-              resendId: result.id,
-              to: lead.email,
-            } as any,
+            direction: 'outbound',
+            channel: 'email',
+            body,
+            providerMessageId: result.id,
           },
         })
       } catch (emailError: any) {
@@ -194,16 +170,16 @@ export async function sendLeadReply(
       }
     }
 
-    // Update lead stage to Contacted (only if not already in later stage)
+    // Contract v1.0: Update lead status if still 'new'
     const currentLead = await prisma.lead.findUnique({ 
       where: { id: leadId },
-      select: { stage: true }
+      select: { status: true }
     })
     
-    if (currentLead && ['New', 'Qualified'].includes(currentLead.stage)) {
+    if (currentLead && currentLead.status === 'new') {
       await prisma.lead.update({
         where: { id: leadId },
-        data: { stage: 'Contacted' },
+        data: { status: 'qualified' },
       })
     }
 

@@ -1,12 +1,12 @@
 'use client'
 
-// PRIMUS HOME PRO - Lead Drawer Component
+// PRIMUS HOME PRO - Lead Drawer Component (Contract v1.0)
 // Detailed side panel view for lead management
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import type { LeadWithMeta } from '@/types'
-import { updateLeadStage, addLeadNote } from '@/lib/actions/crm'
+import type { LeadWithMeta, Message } from '@/types'
+import { updateLeadStatus, addLeadNote } from '@/lib/actions/crm'
 import { createProjectFromLead } from '@/lib/actions/create-project'
 import { X, Clock, BrainCircuit, Send, Mail, Phone, HardHat, FileText } from 'lucide-react'
 import { ScoreBadge, IntentBadge, SentimentBadge } from './badges'
@@ -24,11 +24,12 @@ export function LeadDrawer({ lead, onClose }: LeadDrawerProps) {
   const [noteText, setNoteText] = useState('')
   const [isPending, startTransition] = useTransition()
 
-  const isClosedWon = lead.stage === 'Closed Won' || lead.stage === 'Won' || lead.stage === 'Closed'
+  // Contract v1.0: Use status field (lowercase values)
+  const isSold = lead.status === 'sold'
 
-  async function handleStageChange(newStage: string) {
+  async function handleStatusChange(newStatus: string) {
     setIsUpdating(true)
-    await updateLeadStage(lead.id, newStage)
+    await updateLeadStatus(lead.id, newStatus)
     setIsUpdating(false)
   }
 
@@ -130,31 +131,31 @@ export function LeadDrawer({ lead, onClose }: LeadDrawerProps) {
           </p>
         </div>
 
-        {/* Stage Actions */}
+        {/* Status Actions - Contract v1.0 */}
         <div className="mb-6">
           <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-            Update Stage
+            Update Status
           </h3>
           <div className="grid grid-cols-2 gap-2">
-            {['New', 'Contacted', 'Qualified', 'Closed Won'].map((stage) => (
+            {['new', 'qualified', 'proposed', 'sold', 'disqualified'].map((status) => (
               <button
-                key={stage}
-                onClick={() => handleStageChange(stage)}
+                key={status}
+                onClick={() => handleStatusChange(status)}
                 disabled={isUpdating}
-                className={`rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${
-                  lead.stage === stage
+                className={`rounded-lg border px-3 py-2 text-xs font-medium capitalize transition-colors ${
+                  lead.status === status
                     ? 'border-primary bg-primary text-primary-foreground'
                     : 'border-border bg-card text-foreground hover:border-primary/50'
                 } disabled:opacity-50`}
               >
-                {stage}
+                {status}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Project Actions - Show for Closed Won leads */}
-        {isClosedWon && (
+        {/* Project Actions - Show for sold leads */}
+        {isSold && (
           <div className="mb-6 rounded-lg border border-green-200 bg-green-50 p-4">
             <h3 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-green-700">
               <HardHat className="h-4 w-4" /> Installation Project
@@ -191,32 +192,30 @@ export function LeadDrawer({ lead, onClose }: LeadDrawerProps) {
           </div>
         )}
 
-        {/* Activity Timeline */}
+        {/* Message History - Contract v1.0 */}
         <div className="mb-6 space-y-4">
           <h3 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-            Activity
+            Messages
           </h3>
           <div className="relative ml-2 space-y-4 border-l border-border pl-4">
-            {lead.events.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No activity yet</p>
+            {!lead.messages || lead.messages.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No messages yet</p>
             ) : (
-              lead.events.map((event) => {
-                const payload = event.payload as Record<string, unknown> | null
-                const eventIcon = getEventIcon(event.type, payload)
-                const eventText = getEventText(event.type, event.content, payload)
-                const isAI = isAIAction(event.type)
+              lead.messages.map((message: Message) => {
+                const isOutbound = message.direction === 'outbound'
+                const icon = message.channel === 'email' ? '📧' : '💬'
                 
                 return (
-                  <div key={event.id} className={`relative ${isAI ? 'bg-solar-primary/5 -ml-2 pl-2 py-1 rounded-lg border-l-2 border-solar-primary' : ''}`}>
-                    <div className={`absolute -left-[21px] top-1 flex h-5 w-5 items-center justify-center rounded-full text-[10px] ${isAI ? 'bg-solar-primary text-white' : getEventBgColor(event.type, payload)}`}>
-                      {eventIcon}
+                  <div key={message.id} className={`relative ${isOutbound ? 'bg-blue-50 -ml-2 pl-2 py-1 rounded-lg border-l-2 border-blue-400' : ''}`}>
+                    <div className={`absolute -left-[21px] top-1 flex h-5 w-5 items-center justify-center rounded-full text-[10px] ${isOutbound ? 'bg-blue-400 text-white' : 'bg-green-400 text-white'}`}>
+                      {icon}
                     </div>
                     <p className="text-sm text-foreground pl-1">
-                      {isAI && <span className="text-solar-primary font-medium">AI: </span>}
-                      {eventText}
+                      <span className="font-medium">{isOutbound ? 'Sent' : 'Received'}: </span>
+                      {message.body.substring(0, 100)}{message.body.length > 100 ? '...' : ''}
                     </p>
                     <span className="text-[10px] text-muted-foreground pl-1">
-                      {new Date(event.createdAt).toLocaleString()}
+                      {new Date(message.sentAt).toLocaleString()}
                     </span>
                   </div>
                 )

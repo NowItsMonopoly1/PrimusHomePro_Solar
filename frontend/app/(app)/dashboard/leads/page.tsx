@@ -1,11 +1,11 @@
 // PRIMUS HOME PRO - Leads Dashboard Page
-// Command Center for lead management with solar branding
+// Command Center for lead management (Contract v1.0 Aligned)
 
 export const dynamic = 'force-dynamic'
 
 import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
-import { getLeadsForUser } from '@/lib/data/leads'
+import { getLeadsForAgent } from '@/lib/data/leads'
 import { LeadsTable } from '@/components/crm/leads-table'
 import { prisma } from '@/lib/db/prisma'
 import { Button } from '@/components/ui/button'
@@ -18,12 +18,12 @@ export default async function LeadsPage() {
     redirect('/sign-in')
   }
 
-  // Find user by Clerk ID
-  const user = await prisma.user.findUnique({
+  // Contract v1.0: Find Agent by Clerk ID
+  const agent = await prisma.agent.findUnique({
     where: { clerkId: clerkUserId },
   })
 
-  if (!user) {
+  if (!agent) {
     return (
       <div className="flex min-h-screen items-center justify-center p-6 bg-solar-bg">
         <div className="text-center">
@@ -39,7 +39,7 @@ export default async function LeadsPage() {
     )
   }
 
-  const leads = await getLeadsForUser(user.id)
+  const leads = await getLeadsForAgent(agent.id)
 
   return (
     <section className="mx-auto max-w-7xl space-y-6 p-6 md:p-10">

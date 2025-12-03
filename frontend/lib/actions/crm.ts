@@ -1,49 +1,60 @@
 'use server'
 
-// PRIMUS HOME PRO - Server Actions: CRM
-// Handles stage changes and internal notes
+// PRIMUS HOME PRO - Server Actions: CRM (Contract v1.0 Aligned)
+// Handles status changes and messaging
 
 import { prisma } from '@/lib/db/prisma'
 import { revalidatePath } from 'next/cache'
 import type { ActionResponse } from '@/types'
 
 /**
- * Update lead stage
- * Creates a STAGE_CHANGE event for audit trail
+ * Update lead status
+ * Contract v1.0: Uses 'status' field (not 'stage')
+ * Valid values: 'new', 'qualified', 'disqualified', 'proposed', 'sold'
  */
-export async function updateLeadStage(
+export async function updateLeadStatus(
   leadId: string,
-  stage: string
+  status: string
 ): Promise<ActionResponse> {
   try {
     await prisma.lead.update({
       where: { id: leadId },
-      data: { stage },
+      data: { status },
     })
 
-    await prisma.leadEvent.create({
+    // Contract v1.0: Log via AutomationEvent
+    await prisma.automationEvent.create({
       data: {
         leadId,
-        type: 'STAGE_CHANGE',
-        content: `Stage changed to ${stage}`,
+        eventType: 'status_change',
+        triggeredAt: new Date(),
+        handled: true,
+        handledAt: new Date(),
         metadata: {
-          newStage: stage,
-          timestamp: new Date().toISOString(),
-        } as any,
+          newStatus: status,
+        },
       },
     })
 
     revalidatePath('/dashboard/leads')
     return { success: true, data: null }
   } catch (error) {
-    console.error('Error updating lead stage:', error)
-    return { success: false, error: 'Failed to update stage' }
+    console.error('Error updating lead status:', error)
+    return { success: false, error: 'Failed to update status' }
   }
+}
+
+// Legacy alias for backward compatibility
+export async function updateLeadStage(
+  leadId: string,
+  stage: string
+): Promise<ActionResponse> {
+  return updateLeadStatus(leadId, stage.toLowerCase())
 }
 
 /**
  * Add internal note to lead
- * Creates a NOTE_ADDED event
+ * Contract v1.0: Uses Message model with direction='internal'
  */
 export async function addLeadNote(formData: FormData): Promise<ActionResponse> {
   const leadId = formData.get('leadId') as string
@@ -54,11 +65,13 @@ export async function addLeadNote(formData: FormData): Promise<ActionResponse> {
   }
 
   try {
-    await prisma.leadEvent.create({
+    // Contract v1.0: Store notes as internal messages
+    await prisma.message.create({
       data: {
         leadId,
-        type: 'NOTE_ADDED',
-        content,
+        direction: 'internal',
+        channel: 'note',
+        body: content,
       },
     })
 

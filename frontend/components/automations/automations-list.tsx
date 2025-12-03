@@ -22,7 +22,7 @@ export function AutomationsList({ automations, onRefresh }: AutomationsListProps
 
   function handleToggle(automation: AutomationWithConfig) {
     startTransition(async () => {
-      await toggleAutomation(automation.id, automation.userId, !automation.enabled)
+      await toggleAutomation(automation.id, automation.agentId, !automation.enabled)
       if (onRefresh) {
         onRefresh()
       } else {
@@ -95,8 +95,8 @@ export function AutomationsList({ automations, onRefresh }: AutomationsListProps
                             ` & ≤ ${config.conditions.maxScore}`}
                           {config.conditions.intentIn &&
                             ` • Intent: ${config.conditions.intentIn.join(', ')}`}
-                          {config.conditions.stageIn &&
-                            ` • Stage: ${config.conditions.stageIn.join(', ')}`}
+                          {config.conditions.statusIn &&
+                            ` • Status: ${config.conditions.statusIn.join(', ')}`}
                         </p>
                       )}
                     </div>

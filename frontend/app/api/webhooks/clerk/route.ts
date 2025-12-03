@@ -1,5 +1,5 @@
 // PRIMUS HOME PRO - Clerk Webhook Handler
-// Syncs Clerk users to our database on user.created event
+// Syncs Clerk users to our Agent table on user.created event
 
 import { Webhook } from 'svix'
 import { headers } from 'next/headers'
@@ -51,18 +51,19 @@ export async function POST(req: Request) {
     const { id, email_addresses, first_name, last_name } = evt.data
 
     try {
-      // Create user in our database
-      await prisma.user.create({
+      // Create Agent in our database (Contract v1.0)
+      await prisma.agent.create({
         data: {
           clerkId: id,
           email: email_addresses[0]?.email_address ?? '',
-          name: `${first_name ?? ''} ${last_name ?? ''}`.trim() || null,
+          name: `${first_name ?? ''} ${last_name ?? ''}`.trim() || 'New Agent',
+          role: 'sales', // Default role for new agents
         },
       })
 
-      console.log(`✓ User synced to database: ${id}`)
+      console.log(`✓ Agent synced to database: ${id}`)
     } catch (error) {
-      console.error('Error creating user in database:', error)
+      console.error('Error creating agent in database:', error)
       return new Response('Error: Database sync failed', { status: 500 })
     }
   }
@@ -71,17 +72,17 @@ export async function POST(req: Request) {
     const { id, email_addresses, first_name, last_name } = evt.data
 
     try {
-      await prisma.user.update({
+      await prisma.agent.update({
         where: { clerkId: id },
         data: {
           email: email_addresses[0]?.email_address ?? '',
-          name: `${first_name ?? ''} ${last_name ?? ''}`.trim() || null,
+          name: `${first_name ?? ''} ${last_name ?? ''}`.trim() || 'Agent',
         },
       })
 
-      console.log(`✓ User updated in database: ${id}`)
+      console.log(`✓ Agent updated in database: ${id}`)
     } catch (error) {
-      console.error('Error updating user in database:', error)
+      console.error('Error updating agent in database:', error)
     }
   }
 
@@ -89,13 +90,13 @@ export async function POST(req: Request) {
     const { id } = evt.data
 
     try {
-      await prisma.user.delete({
+      await prisma.agent.delete({
         where: { clerkId: id ?? '' },
       })
 
-      console.log(`✓ User deleted from database: ${id}`)
+      console.log(`✓ Agent deleted from database: ${id}`)
     } catch (error) {
-      console.error('Error deleting user from database:', error)
+      console.error('Error deleting agent from database:', error)
     }
   }
 

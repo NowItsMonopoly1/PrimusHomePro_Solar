@@ -56,31 +56,31 @@ export function LeadsTable({ initialLeads }: LeadsTableProps) {
       ),
     },
     {
-      header: 'Stage',
-      accessorKey: 'stage',
-      cell: ({ row }) => <StageBadge stage={row.original.stage} />,
+      header: 'Status',
+      accessorKey: 'status',
+      cell: ({ row }) => <StageBadge stage={row.original.status} />,
     },
     {
       header: 'Solar Status',
-      accessorKey: 'siteSuitability',
+      accessorKey: 'solarQualification',
       cell: ({ row }) => {
         const lead = row.original as LeadWithMeta & { 
-          siteSuitability?: string
-          solarEnriched?: boolean
-          siteSurvey?: { systemSizeKW?: number }
+          solarQualification?: { roofViable?: boolean; solarScore?: number; systemSizeKW?: number }
         }
-        if (!lead.solarEnriched) {
+        if (!lead.solarQualification) {
           return (
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-solar-gray-100 text-solar-gray-500 text-xs font-medium rounded-lg">
-              ⏳ Analyzing...
+              ⏳ Not Qualified
             </span>
           )
         }
+        // Contract v1.0: SolarQualification has roofViable and solarScore
+        const suitability = lead.solarQualification.roofViable ? 'VIABLE' : 'NOT_VIABLE'
         return (
           <SolarBadge 
-            suitability={lead.siteSuitability || 'NOT_VIABLE'} 
+            suitability={suitability} 
             showSystemSize={true}
-            systemSizeKW={lead.siteSurvey?.systemSizeKW}
+            systemSizeKW={lead.solarQualification.systemSizeKW}
           />
         )
       },

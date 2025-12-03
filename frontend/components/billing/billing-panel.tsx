@@ -8,15 +8,15 @@ import { PLANS, type PlanConfig } from '@/lib/billing/plans'
 import { createCheckoutSession, createPortalSession } from '@/lib/actions/billing'
 import { Check, Loader2, Zap, Star, Crown, Users, Sparkles } from 'lucide-react'
 
-// Define User type inline to avoid Prisma import issues on Vercel
-interface BillingUser {
+// Define Agent type inline to avoid Prisma import issues on Vercel
+// NOTE: Contract v1.0 Agent model doesn't have subscription fields
+// These are placeholder for future billing integration
+interface BillingAgent {
   id: string
-  subscriptionPlan: string | null
-  subscriptionStatus: string | null
 }
 
 interface BillingPanelProps {
-  user: BillingUser
+  agent: BillingAgent
   currentPlan: PlanConfig
 }
 
@@ -32,12 +32,12 @@ const planGradients: Record<string, string> = {
   agency: 'from-purple-500 to-purple-700',
 }
 
-export function BillingPanel({ user, currentPlan }: BillingPanelProps) {
+export function BillingPanel({ agent, currentPlan }: BillingPanelProps) {
   const [isPending, startTransition] = useTransition()
 
   function handleUpgrade(planId: string) {
     startTransition(async () => {
-      const res = await createCheckoutSession(user.id, planId)
+      const res = await createCheckoutSession(agent.id, planId)
       if (res.success && res.data) {
         window.location.href = res.data.url
       } else {
@@ -48,7 +48,7 @@ export function BillingPanel({ user, currentPlan }: BillingPanelProps) {
 
   function handleManage() {
     startTransition(async () => {
-      const res = await createPortalSession(user.id)
+      const res = await createPortalSession(agent.id)
       if (res.success && res.data) {
         window.location.href = res.data.url
       } else {

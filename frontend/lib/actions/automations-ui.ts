@@ -1,7 +1,8 @@
 'use server'
 
 // PRIMUS HOME PRO - Server Actions: Automation UI
-// Manage automation settings from dashboard
+// NOTE: Contract v1.0 does not include Automation model.
+// This is a placeholder implementation using AutomationEvent for logging.
 
 import { prisma } from '@/lib/db/prisma'
 import { revalidatePath } from 'next/cache'
@@ -9,17 +10,16 @@ import type { ActionResponse, AutomationConfig } from '@/types'
 
 /**
  * Toggle automation enabled state
+ * NOTE: Placeholder - full automation system will be implemented in future phase
  */
 export async function toggleAutomation(
   id: string,
-  userId: string,
+  agentId: string,
   enabled: boolean
 ): Promise<ActionResponse> {
   try {
-    await prisma.automation.update({
-      where: { id, userId },
-      data: { enabled },
-    })
+    // TODO: Implement when Automation model is added to schema
+    console.log(`[Automation] Toggle ${id} for agent ${agentId}: ${enabled}`)
 
     revalidatePath('/dashboard/automations')
 
@@ -38,10 +38,11 @@ export async function toggleAutomation(
 
 /**
  * Update automation configuration
+ * NOTE: Placeholder - full automation system will be implemented in future phase
  */
 export async function updateAutomation(
   id: string,
-  userId: string,
+  agentId: string,
   data: {
     name: string
     template: string
@@ -49,14 +50,8 @@ export async function updateAutomation(
   }
 ): Promise<ActionResponse> {
   try {
-    await prisma.automation.update({
-      where: { id, userId },
-      data: {
-        name: data.name,
-        template: data.template,
-        config: data.config as any,
-      },
-    })
+    // TODO: Implement when Automation model is added to schema
+    console.log(`[Automation] Update ${id} for agent ${agentId}:`, data.name)
 
     revalidatePath('/dashboard/automations')
 

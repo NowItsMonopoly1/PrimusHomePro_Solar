@@ -178,7 +178,7 @@ ${context.history ? `\nConversation history:\n${context.history}` : ''}`
 
 /**
  * Generate AI reply draft for a lead
- * Uses lead history and context to create personalized responses
+ * Contract v1.0: Uses Message model instead of LeadEvent
  */
 export async function generateLeadReply(params: {
   leadId: string
@@ -187,12 +187,12 @@ export async function generateLeadReply(params: {
 }): Promise<AIReplyDraft> {
   const { leadId, channel, tone = 'default' } = params
 
-  // Fetch lead with events
+  // Fetch lead with messages (Contract v1.0)
   const lead = await prisma.lead.findUnique({
     where: { id: leadId },
     include: {
-      events: {
-        orderBy: { createdAt: 'desc' },
+      messages: {
+        orderBy: { sentAt: 'desc' },
         take: 5,
       },
     },
@@ -202,20 +202,14 @@ export async function generateLeadReply(params: {
     throw new Error('Lead not found')
   }
 
-  // Extract AI analysis from events
-  const analysisEvent = lead.events.find((e: { metadata: unknown }) => {
-    const metadata = e.metadata as any
-    return metadata?.intent || metadata?.score
-  })
+  // Contract v1.0: No AI metadata on messages - use simple defaults
+  const intent = 'Info'
+  const score = 50
 
-  const metadata = analysisEvent?.metadata as any
-  const intent = metadata?.intent ?? lead.intent ?? 'Info'
-  const score = metadata?.score ?? lead.score ?? 50
-
-  // Build context from recent events
-  const recentHistory = lead.events
+  // Build context from recent messages
+  const recentHistory = lead.messages
     .slice(0, 3)
-    .map((e: { type: string; content: string | null }) => `${e.type}: ${e.content}`)
+    .map((m) => `${m.direction}: ${m.body}`)
     .join('\n')
 
   // Construct prompt
@@ -223,10 +217,10 @@ export async function generateLeadReply(params: {
 
 CONTEXT:
 Lead Name: ${lead.name || 'Customer'}
-Lead Intent: ${intent} (Score: ${score}/100)
+Lead Status: ${lead.status}
 Channel: ${channel.toUpperCase()}
-Recent Activity:
-${recentHistory}
+Recent Messages:
+${recentHistory || 'No previous messages'}
 
 TASK:
 Write a ${channel === 'sms' ? 'text message' : 'email'} reply to this lead.
@@ -236,8 +230,7 @@ TONE: ${tone === 'shorter' ? 'Very brief and direct' : tone === 'formal' ? 'Prof
 RULES:
 - ${channel === 'sms' ? 'Keep under 160 characters' : 'Keep to 2-3 sentences max'}
 - Be helpful and human
-- If they're interested (score >60), suggest next steps
-- If they're browsing (score 40-60), offer more info
+- Suggest next steps based on their status
 - Ask ONE clarifying question to move forward
 - Do NOT mention AI or automation
 - Sign off as "The Primus Team"
@@ -257,13 +250,13 @@ Write the ${channel} now:`
       tone,
     }
 
-    // Log AI draft event
-    await prisma.leadEvent.create({
+    // Contract v1.0: Log as Message instead of LeadEvent
+    await prisma.message.create({
       data: {
         leadId: lead.id,
-        type: 'AI_DRAFT',
-        content: `AI generated ${channel} draft`,
-        metadata: draft as any,
+        direction: 'internal',
+        channel: 'note',
+        body: `AI generated ${channel} draft: ${text.trim().substring(0, 100)}...`,
       },
     })
 

@@ -8,21 +8,12 @@ import { Button } from '@/components/ui/button';
 
 type ProjectWithProgress = Awaited<ReturnType<typeof getUserProjects>>[number];
 
-const stageColors: Record<string, string> = {
-  Engineering: 'bg-blue-100 text-blue-800',
-  HOA: 'bg-purple-100 text-purple-800',
-  Permitting: 'bg-yellow-100 text-yellow-800',
-  Installation: 'bg-orange-100 text-orange-800',
-  Inspection: 'bg-pink-100 text-pink-800',
-  Utility: 'bg-cyan-100 text-cyan-800',
-  Complete: 'bg-green-100 text-green-800',
-};
-
+// Contract v1.0: ProjectMilestone.status values
 const statusColors: Record<string, string> = {
-  ACTIVE: 'bg-green-500',
-  ON_HOLD: 'bg-yellow-500',
-  CANCELLED: 'bg-red-500',
-  COMPLETED: 'bg-blue-500',
+  active: 'bg-green-500',
+  on_hold: 'bg-yellow-500',
+  cancelled: 'bg-red-500',
+  completed: 'bg-blue-500',
 };
 
 export default function ProjectsPage() {
@@ -73,7 +64,7 @@ export default function ProjectsPage() {
             <div className="text-6xl mb-4">🏗️</div>
             <h3 className="text-lg font-semibold mb-2">No active projects</h3>
             <p className="text-gray-500 text-center max-w-md mb-4">
-              Projects are created automatically when leads are marked as &quot;Closed Won&quot;
+              Projects are created automatically when leads are marked as &quot;sold&quot;
               and have an accepted proposal.
             </p>
             <Button asChild>
@@ -96,15 +87,15 @@ export default function ProjectsPage() {
                         {project.lead.address || 'No address'}
                       </p>
                     </div>
-                    <div className={`w-3 h-3 rounded-full ${statusColors[project.status]}`} 
+                    <div className={`w-3 h-3 rounded-full ${statusColors[project.status] || 'bg-gray-300'}`} 
                          title={project.status} />
                   </div>
                 </CardHeader>
                 <CardContent>
-                  {/* Stage badge */}
+                  {/* Status badge - Contract v1.0: status field */}
                   <div className="mb-4">
-                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${stageColors[project.currentStage] || 'bg-gray-100 text-gray-800'}`}>
-                      {project.currentStage}
+                    <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 capitalize">
+                      {project.status}
                     </span>
                   </div>
 
@@ -130,23 +121,12 @@ export default function ProjectsPage() {
                         />
                       )}
                     </div>
-                    {/* Current Stage Label */}
-                    <p className="text-xs text-solar-gray-600 mt-1 font-medium">
-                      📍 {project.currentStage}
-                    </p>
                   </div>
 
                   {/* Milestones count */}
                   <p className="text-sm text-gray-500">
                     {project.completedMilestones} of {project.totalMilestones} milestones complete
                   </p>
-
-                  {/* System size */}
-                  {project.lead.siteSurvey?.systemSizeKW && (
-                    <p className="text-sm text-gray-500 mt-1">
-                      ☀️ {project.lead.siteSurvey.systemSizeKW.toFixed(2)} kW system
-                    </p>
-                  )}
                 </CardContent>
               </Card>
             </Link>

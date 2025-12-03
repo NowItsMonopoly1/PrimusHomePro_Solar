@@ -2,6 +2,8 @@
 
 // PRIMUS HOME PRO - Billing Actions
 // Server actions for Stripe checkout and portal
+// NOTE: Contract v1.0 Agent model does not include billing fields.
+// This is a placeholder implementation.
 
 import { stripe } from '@/lib/billing/stripe'
 import { prisma } from '@/lib/db/prisma'
@@ -12,15 +14,16 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 
 /**
  * Create Stripe checkout session for plan upgrade
+ * NOTE: Billing fields not in Contract v1.0 - placeholder implementation
  */
 export async function createCheckoutSession(
-  userId: string,
+  agentId: string,
   planId: string
 ): Promise<ActionResponse<{ url: string }>> {
   try {
-    const user = await prisma.user.findUnique({ where: { id: userId } })
-    if (!user || !user.email) {
-      return { success: false, error: 'User not found' }
+    const agent = await prisma.agent.findUnique({ where: { id: agentId } })
+    if (!agent || !agent.email) {
+      return { success: false, error: 'Agent not found' }
     }
 
     const plan = PLANS.find((p) => p.id === planId)
@@ -28,28 +31,20 @@ export async function createCheckoutSession(
       return { success: false, error: 'Invalid plan' }
     }
 
-    // Get or create Stripe customer
-    let customerId = user.stripeCustomer
-    if (!customerId) {
-      const customer = await stripe.customers.create({
-        email: user.email,
-        name: user.name || undefined,
-        metadata: { userId: user.id },
-      })
-      customerId = customer.id
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { stripeCustomer: customerId },
-      })
-    }
+    // Create Stripe customer
+    const customer = await stripe.customers.create({
+      email: agent.email,
+      name: agent.name || undefined,
+      metadata: { agentId: agent.id },
+    })
 
     // Create checkout session
     const session = await stripe.checkout.sessions.create({
-      customer: customerId,
+      customer: customer.id,
       mode: 'subscription',
       payment_method_types: ['card'],
       line_items: [{ price: plan.stripePriceId, quantity: 1 }],
-      metadata: { userId: user.id, planId: plan.id },
+      metadata: { agentId: agent.id, planId: plan.id },
       success_url: `${APP_URL}/dashboard/billing?success=true`,
       cancel_url: `${APP_URL}/dashboard/billing?canceled=true`,
     })
@@ -67,22 +62,18 @@ export async function createCheckoutSession(
 
 /**
  * Create Stripe customer portal session for subscription management
+ * NOTE: Billing fields not in Contract v1.0 - placeholder implementation
  */
 export async function createPortalSession(
-  userId: string
+  agentId: string
 ): Promise<ActionResponse<{ url: string }>> {
   try {
-    const user = await prisma.user.findUnique({ where: { id: userId } })
-    if (!user?.stripeCustomer) {
-      return { success: false, error: 'No customer found' }
+    // NOTE: Without stripeCustomer field, we cannot create portal session
+    // This is a placeholder that returns an error
+    return { 
+      success: false, 
+      error: 'Billing management not yet available. Contact support for subscription changes.' 
     }
-
-    const session = await stripe.billingPortal.sessions.create({
-      customer: user.stripeCustomer,
-      return_url: `${APP_URL}/dashboard/billing`,
-    })
-
-    return { success: true, data: { url: session.url } }
   } catch (error) {
     console.error('Error creating portal session:', error)
     return { success: false, error: 'Failed to create portal session' }

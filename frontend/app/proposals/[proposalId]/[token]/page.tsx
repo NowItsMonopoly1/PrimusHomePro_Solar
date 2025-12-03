@@ -1,5 +1,6 @@
 // PRIMUS HOME PRO - Public Proposal Presentation Page
 // Secure, token-validated page for customers to view and sign proposals
+// NOTE: Contract v1.0 simplified - token validation for future phase
 
 import { notFound } from 'next/navigation'
 import { getPublicProposalDetails } from '@/lib/actions/accept-proposal'
@@ -15,15 +16,16 @@ interface ProposalPageProps {
 export default async function PublicProposalPage({ params }: ProposalPageProps) {
   const { proposalId, token } = await params
 
-  // Fetch proposal with token validation
-  const result = await getPublicProposalDetails(proposalId, token)
+  // Contract v1.0: Simplified - token validation deferred to future phase
+  // For now, fetch proposal by ID only
+  const result = await getPublicProposalDetails(proposalId)
 
   if (!result.success) {
-    // Return not found for invalid/expired proposals
+    // Return not found for invalid proposals
     notFound()
   }
 
-  const { proposal, lead, siteSurvey } = result.data
+  const { proposal, lead } = result.data
 
   return (
     <ProposalPresentation
@@ -31,15 +33,14 @@ export default async function PublicProposalPage({ params }: ProposalPageProps) 
       accessToken={token}
       proposal={proposal}
       lead={lead}
-      siteSurvey={siteSurvey}
     />
   )
 }
 
 // Metadata
 export async function generateMetadata({ params }: ProposalPageProps) {
-  const { proposalId, token } = await params
-  const result = await getPublicProposalDetails(proposalId, token)
+  const { proposalId } = await params
+  const result = await getPublicProposalDetails(proposalId)
 
   if (!result.success) {
     return {
@@ -51,7 +52,7 @@ export async function generateMetadata({ params }: ProposalPageProps) {
 
   return {
     title: `Solar Proposal for ${lead.name || 'Your Home'} | Primus Home Pro`,
-    description: `View your personalized ${proposal.systemSizeKW.toFixed(1)}kW solar system proposal with estimated savings of $${Math.round(proposal.netSavings25Yr).toLocaleString()} over 25 years.`,
+    description: `View your personalized solar system proposal with estimated monthly savings of $${Math.round(proposal.estMonthlySavings)}.`,
     robots: 'noindex, nofollow', // Don't index personal proposals
   }
 }

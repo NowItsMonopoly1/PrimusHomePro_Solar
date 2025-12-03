@@ -1,6 +1,7 @@
 // PRIMUS HOME PRO - Dashboard: Billing
 // Subscription management and plan selection
-// RBAC: Only ADMIN role can access this page
+// NOTE: Contract v1.0 Agent model does not include billing fields.
+// This page is a placeholder for future billing integration.
 
 export const dynamic = 'force-dynamic'
 
@@ -29,19 +30,18 @@ export default async function BillingPage() {
     redirect('/sign-in')
   }
 
-  const user = await prisma.user.findUnique({ 
+  // Contract v1.0: Use Agent model
+  const agent = await prisma.agent.findUnique({ 
     where: { clerkId: userId },
-    // TODO: After migration, include company relation
-    // include: { company: true },
   })
-  if (!user) {
+  
+  if (!agent) {
     redirect('/sign-in')
   }
 
-  // TODO: After migration, use company subscription if available
-  // const subscriptionPlan = user.company?.subscriptionPlan || user.subscriptionPlan
-  const subscriptionPlan = user.subscriptionPlan
-  const currentPlan = getPlanConfig(subscriptionPlan)
+  // NOTE: Billing fields not in Contract v1.0 schema
+  // Using default 'free' plan until billing is added
+  const currentPlan = getPlanConfig('free')
 
   return (
     <div className="mx-auto max-w-5xl space-y-8 p-8">
@@ -54,31 +54,23 @@ export default async function BillingPage() {
       </div>
 
       {/* Current Plan Status */}
-      {user.subscriptionStatus && user.subscriptionStatus !== 'canceled' && (
-        <div className="rounded-lg border border-border bg-card p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="font-semibold">Current Plan: {currentPlan.name}</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Status:{' '}
-                <span className="capitalize">{user.subscriptionStatus}</span>
-              </p>
-              {user.subscriptionCurrentEnd && (
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Renews: {new Date(user.subscriptionCurrentEnd).toLocaleDateString()}
-                </p>
-              )}
-            </div>
-            <div className="text-right">
-              <div className="text-2xl font-bold">${currentPlan.priceMonthly}</div>
-              <div className="text-sm text-muted-foreground">per month</div>
-            </div>
+      <div className="rounded-lg border border-border bg-card p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="font-semibold">Current Plan: {currentPlan.name}</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Contact support to upgrade your plan.
+            </p>
+          </div>
+          <div className="text-right">
+            <div className="text-2xl font-bold">${currentPlan.priceMonthly}</div>
+            <div className="text-sm text-muted-foreground">per month</div>
           </div>
         </div>
-      )}
+      </div>
 
       {/* Plan Selection */}
-      <BillingPanel user={user} currentPlan={currentPlan} />
+      <BillingPanel agent={agent} currentPlan={currentPlan} />
 
       {/* FAQ */}
       <div className="rounded-lg border border-border bg-card p-6">

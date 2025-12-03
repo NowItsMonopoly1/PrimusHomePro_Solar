@@ -1,47 +1,32 @@
 'use server';
 
+// PRIMUS HOME PRO - Project Actions (Contract v1.0 Aligned)
+// Uses Project, ProjectMilestone models with contract-approved fields
+
 import { auth } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/db/prisma';
 import { revalidatePath } from 'next/cache';
 import { runAutomations } from '@/lib/automations/engine';
-import { 
-  getAuthContext, 
-  getProjectWhereClause, 
-  canViewProject, 
-  canUpdateMilestone 
-} from '@/lib/auth/auth-service';
 
-// Milestone name to automation trigger mapping
-const MILESTONE_TRIGGERS: Record<string, string> = {
-  'Permit Application Submitted': 'milestone.permit_submitted',
-  'Permit Approved': 'milestone.permit_approved',
-  'Installation Scheduled': 'milestone.installation_scheduled',
-  'Installation Complete': 'milestone.installation_complete',
-  'Final Inspection Passed': 'milestone.inspection_passed',
-  'PTO Received': 'milestone.pto_received',
-};
-
-// Standard milestones for solar installation projects
+// Contract v1.0: Standard milestones with unlockKey
 const STANDARD_MILESTONES: Array<{
-  name: string;
-  category: string;
-  sortOrder: number;
-  description: string;
+  unlockKey: string;
+  title: string;
 }> = [
-  { name: 'Site Survey Completed', category: 'ENGINEERING', sortOrder: 1, description: 'On-site measurement and shading analysis' },
-  { name: 'Engineering Design Finalized', category: 'ENGINEERING', sortOrder: 2, description: 'System design and structural review' },
-  { name: 'HOA Application Submitted', category: 'HOA', sortOrder: 3, description: 'Submit architectural change request to HOA' },
-  { name: 'HOA Approval Received', category: 'HOA', sortOrder: 4, description: 'HOA approves solar installation' },
-  { name: 'Permit Application Submitted', category: 'PERMITTING', sortOrder: 5, description: 'Submit building permit to local AHJ' },
-  { name: 'Permit Approved', category: 'PERMITTING', sortOrder: 6, description: 'Building permit approved by jurisdiction' },
-  { name: 'Materials Ordered', category: 'INSTALLATION', sortOrder: 7, description: 'Panels, inverters, racking ordered' },
-  { name: 'Materials Received', category: 'INSTALLATION', sortOrder: 8, description: 'All equipment delivered to warehouse' },
-  { name: 'Installation Scheduled', category: 'INSTALLATION', sortOrder: 9, description: 'Installation date confirmed with customer' },
-  { name: 'Installation Complete', category: 'INSTALLATION', sortOrder: 10, description: 'Physical installation finished' },
-  { name: 'Final Inspection Passed', category: 'INSPECTION', sortOrder: 11, description: 'City/county inspection approved' },
-  { name: 'Utility Interconnection Applied', category: 'UTILITY', sortOrder: 12, description: 'Net metering application submitted' },
-  { name: 'Utility Meter Installed', category: 'UTILITY', sortOrder: 13, description: 'Bi-directional meter installed' },
-  { name: 'PTO Received', category: 'PTO', sortOrder: 14, description: 'Permission to Operate granted - system live!' },
+  { unlockKey: 'site_survey', title: 'Site Survey Completed' },
+  { unlockKey: 'engineering', title: 'Engineering Design Finalized' },
+  { unlockKey: 'hoa_submitted', title: 'HOA Application Submitted' },
+  { unlockKey: 'hoa_approved', title: 'HOA Approval Received' },
+  { unlockKey: 'permit_submitted', title: 'Permit Application Submitted' },
+  { unlockKey: 'permit_approved', title: 'Permit Approved' },
+  { unlockKey: 'materials_ordered', title: 'Materials Ordered' },
+  { unlockKey: 'materials_received', title: 'Materials Received' },
+  { unlockKey: 'install_scheduled', title: 'Installation Scheduled' },
+  { unlockKey: 'install_complete', title: 'Installation Complete' },
+  { unlockKey: 'inspection_passed', title: 'Final Inspection Passed' },
+  { unlockKey: 'utility_applied', title: 'Utility Interconnection Applied' },
+  { unlockKey: 'meter_installed', title: 'Utility Meter Installed' },
+  { unlockKey: 'pto_granted', title: 'PTO Received - System Live!' },
 ];
 
 export interface CreateProjectResult {
@@ -51,26 +36,30 @@ export interface CreateProjectResult {
 }
 
 /**
- * Creates a new project from a closed-won lead
- * Auto-generates standard milestone checklist
+ * Creates a new project from a sold lead
+ * Contract v1.0: Uses agentId, status field
  */
 export async function createProjectFromLead(leadId: string): Promise<CreateProjectResult> {
-  const { userId } = await auth();
-  if (!userId) {
+  const { userId: clerkUserId } = await auth();
+  if (!clerkUserId) {
     return { success: false, error: 'Unauthorized' };
   }
 
   try {
+    // Contract v1.0: Get agent by clerkId
+    const agent = await prisma.agent.findUnique({
+      where: { clerkId: clerkUserId },
+    });
+
+    if (!agent) {
+      return { success: false, error: 'Agent not found' };
+    }
+
     // Get the lead and verify ownership
     const lead = await prisma.lead.findFirst({
-      where: { id: leadId, userId },
+      where: { id: leadId, agentId: agent.id },
       include: {
         project: true,
-        proposals: {
-          where: { status: 'ACCEPTED' },
-          orderBy: { generatedAt: 'desc' },
-          take: 1,
-        },
       },
     });
 
@@ -83,34 +72,25 @@ export async function createProjectFromLead(leadId: string): Promise<CreateProje
       return { success: true, projectId: lead.project.id };
     }
 
-    // Verify lead is in appropriate stage
-    if (lead.stage !== 'Closed Won' && lead.stage !== 'Won') {
+    // Contract v1.0: Verify lead status is 'sold'
+    if (lead.status !== 'sold') {
       return { 
         success: false, 
-        error: 'Lead must be in "Closed Won" stage to create a project' 
+        error: 'Lead must be in "sold" status to create a project' 
       };
     }
 
-    // Calculate target completion date (typically 60-90 days from contract)
-    const targetCompletion = new Date();
-    targetCompletion.setDate(targetCompletion.getDate() + 75);
-
-    // Create project with milestones
+    // Contract v1.0: Create project with milestones
     const project = await prisma.project.create({
       data: {
         leadId: lead.id,
-        currentStage: 'Engineering',
-        status: 'ACTIVE',
-        contractSignedAt: lead.proposals[0]?.signedAt || new Date(),
-        targetCompletionDate: targetCompletion,
-        notes: `Project created from lead: ${lead.name || lead.email}`,
+        status: 'active', // Contract v1.0: lowercase status
         milestones: {
-          create: STANDARD_MILESTONES.map((m) => ({
-            name: m.name,
-            description: m.description,
-            category: m.category,
-            sortOrder: m.sortOrder,
-            isComplete: false,
+          create: STANDARD_MILESTONES.map((m, i) => ({
+            name: m.title,
+            unlockKey: m.unlockKey,
+            sortOrder: i,
+            status: 'pending', // Contract v1.0: lowercase status
           })),
         },
       },
@@ -119,19 +99,15 @@ export async function createProjectFromLead(leadId: string): Promise<CreateProje
       },
     });
 
-    // Update lead stage if needed
-    await prisma.lead.update({
-      where: { id: leadId },
-      data: { stage: 'Closed Won' },
-    });
-
-    // Log event
-    await prisma.leadEvent.create({
+    // Log via AutomationEvent
+    await prisma.automationEvent.create({
       data: {
         leadId: lead.id,
-        type: 'STAGE_CHANGE',
-        payload: {
-          action: 'project_created',
+        eventType: 'project_created',
+        triggeredAt: new Date(),
+        handled: true,
+        handledAt: new Date(),
+        metadata: {
           projectId: project.id,
           milestonesCreated: project.milestones.length,
         },
@@ -152,33 +128,28 @@ export async function createProjectFromLead(leadId: string): Promise<CreateProje
 }
 
 /**
- * Get project details with milestones and documents
+ * Get project details with milestones
+ * Contract v1.0 compliant
  */
 export async function getProjectDetails(projectId: string) {
-  const { userId } = await auth();
-  if (!userId) return null;
+  const { userId: clerkUserId } = await auth();
+  if (!clerkUserId) return null;
+
+  const agent = await prisma.agent.findUnique({
+    where: { clerkId: clerkUserId },
+  });
+
+  if (!agent) return null;
 
   const project = await prisma.project.findFirst({
     where: {
       id: projectId,
-      lead: { userId },
+      lead: { agentId: agent.id },
     },
     include: {
-      lead: {
-        include: {
-          siteSurvey: {
-            select: {
-              systemSizeKW: true,
-              azimuthDegrees: true,
-            },
-          },
-        },
-      },
+      lead: true,
       milestones: {
-        orderBy: { sortOrder: 'asc' },
-      },
-      documents: {
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: 'asc' },
       },
     },
   });
@@ -188,23 +159,32 @@ export async function getProjectDetails(projectId: string) {
 
 /**
  * Update milestone completion status
+ * Contract v1.0: Uses status field instead of isComplete
  */
 export async function updateMilestoneStatus(
   milestoneId: string,
-  isComplete: boolean
+  completed: boolean
 ): Promise<{ success: boolean; error?: string }> {
-  const { userId } = await auth();
-  if (!userId) {
+  const { userId: clerkUserId } = await auth();
+  if (!clerkUserId) {
     return { success: false, error: 'Unauthorized' };
   }
 
   try {
-    // Verify ownership through project -> lead -> user chain
+    const agent = await prisma.agent.findUnique({
+      where: { clerkId: clerkUserId },
+    });
+
+    if (!agent) {
+      return { success: false, error: 'Agent not found' };
+    }
+
+    // Verify ownership through project -> lead -> agent chain
     const milestone = await prisma.projectMilestone.findFirst({
       where: {
         id: milestoneId,
         project: {
-          lead: { userId },
+          lead: { agentId: agent.id },
         },
       },
       include: {
@@ -218,50 +198,59 @@ export async function updateMilestoneStatus(
       return { success: false, error: 'Milestone not found' };
     }
 
-    // Update milestone
+    // Contract v1.0: Update milestone with status field
     await prisma.projectMilestone.update({
       where: { id: milestoneId },
       data: {
-        isComplete,
-        completedAt: isComplete ? new Date() : null,
-        completedBy: isComplete ? userId : null,
-        automationTriggered: isComplete, // Mark that automation has been fired
+        status: completed ? 'completed' : 'pending',
+        completedAt: completed ? new Date() : null,
+        completedBy: completed ? agent.id : null,
       },
     });
 
-    // Update project stage based on completed milestones
-    const newStage = await updateProjectStage(milestone.projectId);
+    // Check if all milestones completed
+    const allMilestones = await prisma.projectMilestone.findMany({
+      where: { projectId: milestone.projectId },
+    });
 
-    // Log event
-    await prisma.leadEvent.create({
+    const allCompleted = allMilestones.every(m => m.status === 'completed');
+
+    // Update project status if all milestones completed
+    if (allCompleted) {
+      await prisma.project.update({
+        where: { id: milestone.projectId },
+        data: { status: 'completed' },
+      });
+    }
+
+    // Log via AutomationEvent
+    await prisma.automationEvent.create({
       data: {
         leadId: milestone.project.leadId,
-        type: 'STATUS_UPDATE',
-        payload: {
-          action: 'milestone_updated',
+        eventType: completed ? 'milestone_completed' : 'milestone_reset',
+        triggeredAt: new Date(),
+        handled: true,
+        handledAt: new Date(),
+        metadata: {
+          milestoneId,
+          unlockKey: milestone.unlockKey,
           milestoneName: milestone.name,
-          milestoneCategory: milestone.category,
-          isComplete,
+          completed,
         },
       },
     });
 
-    // Trigger milestone automation if completing (not uncompleting)
-    if (isComplete) {
-      const triggerName = MILESTONE_TRIGGERS[milestone.name];
-      if (triggerName) {
-        // Fire automation asynchronously
-        runAutomations({
-          leadId: milestone.project.leadId,
-          trigger: triggerName,
-          data: {
-            projectId: milestone.projectId,
-            milestoneName: milestone.name,
-            milestoneCategory: milestone.category,
-            projectStage: newStage,
-          },
-        }).catch((err) => console.error('[AUTO] Milestone trigger error:', err));
-      }
+    // Trigger automation if completing
+    if (completed) {
+      runAutomations({
+        leadId: milestone.project.leadId,
+        trigger: 'milestone.completed',
+        data: {
+          projectId: milestone.projectId,
+          unlockKey: milestone.unlockKey,
+          milestoneName: milestone.name,
+        },
+      }).catch((err) => console.error('[AUTO] Milestone trigger error:', err));
     }
 
     revalidatePath(`/dashboard/projects/${milestone.projectId}`);
@@ -278,166 +267,45 @@ export async function updateMilestoneStatus(
 }
 
 /**
- * Auto-update project stage based on milestone completion
- * Returns the new stage for automation triggers
- */
-async function updateProjectStage(projectId: string): Promise<string> {
-  const project = await prisma.project.findUnique({
-    where: { id: projectId },
-    include: {
-      milestones: {
-        orderBy: { sortOrder: 'asc' },
-      },
-    },
-  });
-
-  if (!project) return 'Engineering';
-
-  // Find the current stage based on completed milestones
-  const completedCategories = new Set<string>();
-  let currentStage = 'Engineering';
-
-  for (const milestone of project.milestones) {
-    if (milestone.isComplete) {
-      completedCategories.add(milestone.category);
-    }
-  }
-
-  // Determine stage based on milestone categories
-  if (completedCategories.has('PTO')) {
-    currentStage = 'Complete';
-  } else if (completedCategories.has('UTILITY')) {
-    currentStage = 'Utility';
-  } else if (completedCategories.has('INSPECTION')) {
-    currentStage = 'Inspection';
-  } else if (completedCategories.has('INSTALLATION')) {
-    currentStage = 'Installation';
-  } else if (completedCategories.has('PERMITTING')) {
-    currentStage = 'Permitting';
-  } else if (completedCategories.has('HOA')) {
-    currentStage = 'HOA';
-  } else if (completedCategories.has('ENGINEERING')) {
-    currentStage = 'Engineering';
-  }
-
-  // Check if all milestones complete
-  const allComplete = project.milestones.every((m: { isComplete: boolean }) => m.isComplete);
-  const status = allComplete ? 'COMPLETED' : 'ACTIVE';
-
-  await prisma.project.update({
-    where: { id: projectId },
-    data: {
-      currentStage,
-      status,
-    },
-  });
-
-  return currentStage;
-}
-
-/**
- * Get all projects for the current user
+ * Get all projects for current agent
+ * Contract v1.0 compliant
  */
 export async function getUserProjects() {
-  const context = await getAuthContext();
-  if (!context) return [];
+  const { userId: clerkUserId } = await auth();
+  if (!clerkUserId) return [];
 
-  // Get RBAC-compliant WHERE clause
-  let whereClause: Record<string, unknown>;
-  try {
-    whereClause = await getProjectWhereClause();
-  } catch {
-    return [];
-  }
+  const agent = await prisma.agent.findUnique({
+    where: { clerkId: clerkUserId },
+  });
+
+  if (!agent) return [];
 
   const projects = await prisma.project.findMany({
-    where: whereClause,
+    where: {
+      lead: { agentId: agent.id },
+    },
     include: {
-      lead: {
-        include: {
-          siteSurvey: {
-            select: {
-              systemSizeKW: true,
-            },
-          },
-        },
-      },
-      milestones: {
-        select: {
-          isComplete: true,
-        },
-      },
+      lead: true,
+      milestones: true,
     },
     orderBy: { createdAt: 'desc' },
   });
 
-  // Add progress calculation
-  return projects.map((project: typeof projects[number]) => ({
-    ...project,
-    lead: project.lead,
-    progress: Math.round(
-      (project.milestones.filter((m: { isComplete: boolean }) => m.isComplete).length / 
-       Math.max(project.milestones.length, 1)) * 100
-    ),
-    completedMilestones: project.milestones.filter((m: { isComplete: boolean }) => m.isComplete).length,
-    totalMilestones: project.milestones.length,
-  }));
-}
+  // Calculate progress for each project
+  return projects.map((project) => {
+    const totalMilestones = project.milestones.length;
+    const completedMilestones = project.milestones.filter(
+      (m) => m.status === 'completed'
+    ).length;
+    const progress = totalMilestones > 0 
+      ? Math.round((completedMilestones / totalMilestones) * 100) 
+      : 0;
 
-/**
- * Add a document to a project
- */
-export async function addProjectDocument(
-  projectId: string,
-  documentData: {
-    documentType: string;
-    fileName: string;
-    fileUrl: string;
-    fileSize?: number;
-    mimeType?: string;
-    notes?: string;
-  }
-): Promise<{ success: boolean; documentId?: string; error?: string }> {
-  const { userId } = await auth();
-  if (!userId) {
-    return { success: false, error: 'Unauthorized' };
-  }
-
-  try {
-    // Verify ownership
-    const project = await prisma.project.findFirst({
-      where: {
-        id: projectId,
-        lead: { userId },
-      },
-    });
-
-    if (!project) {
-      return { success: false, error: 'Project not found' };
-    }
-
-    const document = await prisma.projectDocument.create({
-      data: {
-        projectId,
-        name: documentData.fileName, // Use fileName as display name
-        documentType: documentData.documentType,
-        fileName: documentData.fileName,
-        fileUrl: documentData.fileUrl,
-        fileSize: documentData.fileSize,
-        mimeType: documentData.mimeType,
-        uploadedBy: userId,
-        notes: documentData.notes,
-      },
-    });
-
-    revalidatePath(`/dashboard/projects/${projectId}`);
-
-    return { success: true, documentId: document.id };
-  } catch (error) {
-    console.error('Add document error:', error);
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Failed to add document' 
+    return {
+      ...project,
+      progress,
+      completedMilestones,
+      totalMilestones,
     };
-  }
+  });
 }

@@ -1,3 +1,10 @@
+// =============================================================================
+// PRIMUS HOME PRO — CANONICAL PRISMA SCHEMA (Contract v1.0)
+// =============================================================================
+// This schema is the SINGLE SOURCE OF TRUTH for all database interactions.
+// Do NOT add fields or models without explicit contract revision.
+// =============================================================================
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -6,461 +13,224 @@ datasource db {
   provider = "postgresql"
 }
 
-// ============================================================================
-// MULTI-TENANCY & RBAC - Company and User Roles (Module K)
-// ============================================================================
+// =============================================================================
+// AGENT — Sales agents, schedulers, installers
+// =============================================================================
 
-// Role enum for granular access control
-enum UserRole {
-  ADMIN       // Full access to billing, automations, settings, all data
-  SALES       // Read/write leads & proposals they own, no billing access
-  SCHEDULER   // Read all projects, write milestones/docs, no billing
-  INSTALLER   // Read-only assigned projects/milestones, mobile view
-}
+model Agent {
+  id      String  @id @default(cuid())
+  clerkId String  @unique // Clerk auth user ID
+  email   String  @unique
+  name    String
+  phone   String?
+  role    String  @default("sales") // "admin", "sales", "scheduler", "installer"
 
-// Company model - represents an Agency subscription
-model Company {
-  id                     String       @id @default(cuid())
-  name                   String
-  slug                   String?      @unique // URL-friendly company identifier
-  
-  // Branding
-  logoUrl                String?
-  primaryColor           String?      @default("#2563eb") // Brand color
-  
-  // Subscription (moved from User)
-  stripeCustomerId       String?      @unique
-  subscriptionPlan       String       @default("free") // free, pro, agency
-  subscriptionStatus     String?      // active, past_due, canceled
-  subscriptionCurrentEnd DateTime?
-  
-  // Settings
-  timezone               String       @default("America/New_York")
-  defaultLeadAssignment  String?      @default("round_robin") // round_robin, manual, none
-  
-  // Limits based on plan
-  maxUsers               Int          @default(1)
-  maxLeadsPerMonth       Int          @default(50)
-  
-  // Timestamps
-  createdAt              DateTime     @default(now())
-  updatedAt              DateTime     @updatedAt
-  
   // Relations
-  users                  User[]
-  leads                  Lead[]
-  projects               Project[]
-  automations            Automation[]
-  invitations            CompanyInvitation[]
-  
-  @@index([stripeCustomerId])
-  @@index([subscriptionPlan])
-}
+  leads             Lead[]
+  commissionUnlocks CommissionUnlock[]
 
-// Pending team invitations
-model CompanyInvitation {
-  id          String   @id @default(cuid())
-  companyId   String
-  email       String
-  role        UserRole @default(SALES)
-  token       String   @unique @default(cuid())
-  expiresAt   DateTime
-  acceptedAt  DateTime?
-  createdAt   DateTime @default(now())
-  invitedBy   String   // userId who sent the invite
-  
-  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  
-  @@unique([companyId, email])
-  @@index([token])
-  @@index([email])
-}
-
-model Automation {
-  id        String   @id
-  userId    String
-  companyId String?  // Link to company for multi-tenancy
-  name      String
-  trigger   String
-  action    String
-  template  String
-  enabled   Boolean  @default(true)
-  config    Json?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  company   Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
-
-  @@index([enabled])
-  @@index([trigger])
-  @@index([userId])
-  @@index([companyId])
-}
-
-model Lead {
-  id        String      @id @default(cuid())
-  userId    String      // Created by this user
-  companyId String?     // Company this lead belongs to (multi-tenancy)
-  assignedUserId String? // Sales rep currently assigned to this lead
-  
-  name      String?
-  email     String?
-  phone     String?
-  address   String?     // Full address for geocoding
-  source    String?
-  score     Int         @default(0)
-  stage     String      @default("New")
-  intent    String?
-  sentiment String?
-  notes     String?
-  metadata  Json?
-  
-  // Solar Site Suitability Fields (from Google Solar API)
-  roofPitch            Float?   // Slope of the roof in degrees
-  maxPanelsCount       Int?     // Maximum number of solar panels possible
-  maxSunshineHoursYear Float?   // Estimated annual sunlight hours
-  annualKwhProduction  Float?   // Estimated annual energy production in kWh
-  carbonOffsetKg       Float?   // Annual CO2 offset in kilograms
-  siteSuitability      String?  // 'VIABLE', 'CHALLENGING', 'NOT_VIABLE'
-  solarEnriched        Boolean  @default(false) // Flag indicating solar data fetched
-  solarEnrichedAt      DateTime? // When solar data was last fetched
-  
-  // Relations
-  siteSurvey    SiteSurvey?
-  proposals     Proposal[]
-  project       Project?    // Installation project (created when lead closes)
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  company       Company?    @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  assignedUser  User?       @relation("AssignedLeads", fields: [assignedUserId], references: [id])
-  events        LeadEvent[]
-
-  @@index([createdAt])
-  @@index([score])
-  @@index([stage])
-  @@index([userId])
-  @@index([companyId])
-  @@index([assignedUserId])
-  @@index([siteSuitability])
-}
-
-// Detailed Solar Site Survey Data
-// Stores comprehensive API response and system design
-model SiteSurvey {
-  id                String   @id @default(cuid())
-  leadId            String   @unique
-  
-  // Location Data
-  latitude          Float?
-  longitude         Float?
-  imageryDate       DateTime? // Date of satellite imagery
-  imageryQuality    String?   // Quality of available imagery
-  
-  // Roof Analysis
-  roofSegmentCount  Int?      // Number of distinct roof segments
-  totalRoofAreaSqM  Float?    // Total roof area in square meters
-  usableRoofAreaSqM Float?    // Usable area for panels
-  azimuthDegrees    Float?    // Roof orientation (compass direction)
-  
-  // System Design
-  systemSizeKW      Float?    // Designed system size in kW
-  panelCapacityW    Int?      // Individual panel wattage
-  recommendedPanels Int?      // Recommended number of panels
-  
-  // Financial Projections
-  estimatedCostUsd     Float?   // Estimated installation cost
-  estimatedSavingsYear Float?   // Annual savings estimate
-  paybackYears         Float?   // Estimated payback period
-  
-  // Raw API Data
-  buildingInsightsJson Json?    // Full buildingInsights response
-  moduleLayoutJson     Json?    // Panel layout and segment data
-  financialAnalysisJson Json?   // Financial analysis data
-  
-  // Imagery
-  roofImageUrl      String?   // URL to roof satellite image
-  dsm3dUrl          String?   // Digital Surface Model 3D URL
-  
-  // Metadata
-  apiVersion        String?   // API version used
-  requestId         String?   // API request ID for debugging
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  
-  // Relations
-  Lead              Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  
-  @@index([leadId])
-  @@index([systemSizeKW])
-}
-
-model LeadEvent {
-  id        String   @id @default(cuid())
-  leadId    String
-  type      String
-  content   String?
-  metadata  Json?
-  payload   Json?
-  createdAt DateTime @default(now())
-  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
-
-  @@index([createdAt])
-  @@index([leadId])
-  @@index([type])
-}
-
-// ============================================================================
-// PROPOSAL - Financial Proposals for Solar Installations
-// ============================================================================
-
-model Proposal {
-  id        String   @id @default(cuid())
-  leadId    String
-  
-  // System Specifications
-  systemSizeWatts       Int       // Total system size in watts
-  systemSizeKW          Float     // Total system size in kW
-  panelCount            Int       // Number of panels
-  panelWattage          Int       @default(400) // Individual panel wattage
-  
-  // Production Estimates
-  annualProductionKWh   Float     // Year 1 estimated production
-  lifetimeProductionKWh Float     // 25-year total production
-  
-  // Cost Breakdown
-  grossSystemCost       Float     // Before incentives
-  federalITC            Float     // Federal Investment Tax Credit amount
-  stateRebate           Float     @default(0) // State/local rebates
-  priceAfterITC         Float     // Final price after incentives
-  costPerWatt           Float     // $/W after incentives
-  
-  // Savings Projections
-  year1Savings          Float     // First year savings
-  netSavings25Yr        Float     // Total net savings over 25 years
-  breakEvenYear         Int?      // Year when system pays for itself
-  
-  // Financial Scenarios (JSON for flexibility)
-  cashScenario          Json      // Cash purchase details
-  loan10YearScenario    Json      // 10-year loan details
-  loan15YearScenario    Json      // 15-year loan details
-  ppaScenario           Json      // Power Purchase Agreement details
-  recommendedOption     String    // CASH, LOAN_10, LOAN_15, or PPA
-  
-  // Assumptions Used
-  utilityRate           Float     // $/kWh used for calculations
-  utilityEscalation     Float     // Annual rate escalation %
-  panelEfficiency       Float     // Panel efficiency %
-  degradationRate       Float     // Annual degradation %
-  
-  // Metadata
-  stateCode             String?   // State for utility rate lookup
-  generatedAt           DateTime  @default(now())
-  expiresAt             DateTime? // When proposal expires
-  status                String    @default("draft") // draft, sent, viewed, accepted, expired
-  
-  // Secure Public Access Token
-  accessToken           String    @unique @default(cuid()) // Secure token for public viewing
-  
-  // E-Signature & Acceptance
-  signedAt              DateTime? // When proposal was signed
-  signatureImage        String?   @db.Text // Base64 encoded signature image
-  selectedScenario      String?   // Which scenario was selected (CASH, LOAN_10, LOAN_15, PPA)
-  customerName          String?   // Name of person who signed
-  customerEmail         String?   // Email for contract delivery
-  ipAddress             String?   // IP address at signing (for audit)
-  
-  // Relations
-  lead                  Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  
-  @@index([leadId])
-  @@index([status])
-  @@index([generatedAt])
-  @@index([accessToken])
-}
-
-// ============================================================================
-// PROJECT - Installation Project Management (Module J)
-// ============================================================================
-
-model Project {
-  id                    String              @id @default(cuid())
-  leadId                String              @unique // One project per closed sale
-  companyId             String?             // Company this project belongs to (multi-tenancy)
-  assignedUserId        String?             // Project manager/scheduler assigned
-  
-  // Project Status
-  currentStage          String              @default("Engineering") // Engineering, Permitting, Scheduling, Installation, Inspection, PTO
-  status                String              @default("active") // active, on_hold, completed, cancelled
-  
-  // Timeline
-  contractSignedAt      DateTime?           // When the proposal was accepted
-  targetCompletionDate  DateTime?           // Expected PTO date
-  actualCompletionDate  DateTime?           // When PTO was achieved
-  
-  // Installation Details
-  installerAssigned     String?             // Name/ID of installation crew
-  installationDate      DateTime?           // Scheduled installation date
-  inspectionDate        DateTime?           // Scheduled inspection date
-  
-  // Permit Information
-  permitNumber          String?             // AHJ permit number
-  permitSubmittedAt     DateTime?
-  permitApprovedAt      DateTime?
-  
-  // Utility Interconnection
-  utilityApplicationId  String?             // Utility company application ID
-  utilitySubmittedAt    DateTime?
-  utilityApprovedAt     DateTime?
-  ptoGrantedAt          DateTime?           // Permission to Operate date
-  
-  // HOA (if applicable)
-  hoaRequired           Boolean             @default(false)
-  hoaSubmittedAt        DateTime?
-  hoaApprovedAt         DateTime?
-  
-  // Notes & Metadata
-  notes                 String?             @db.Text
-  metadata              Json?
-  
-  // Timestamps
-  createdAt             DateTime            @default(now())
-  updatedAt             DateTime            @updatedAt
-  
-  // Relations
-  lead                  Lead                @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  company               Company?            @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  assignedUser          User?               @relation("AssignedProjects", fields: [assignedUserId], references: [id])
-  milestones            ProjectMilestone[]
-  documents             ProjectDocument[]
-  
-  @@index([currentStage])
-  @@index([status])
-  @@index([companyId])
-  @@index([assignedUserId])
-  @@index([installerAssigned])
-  @@index([targetCompletionDate])
-}
-
-// Standard milestones for solar installation projects
-model ProjectMilestone {
-  id                    String      @id @default(cuid())
-  projectId             String
-  
-  // Milestone Definition
-  name                  String      // e.g., "Site Survey Complete", "Permit Approved"
-  description           String?     // Detailed description
-  category              String      // Engineering, Permitting, Installation, Inspection
-  sortOrder             Int         @default(0) // Display order
-  
-  // Status
-  isComplete            Boolean     @default(false)
-  completedAt           DateTime?
-  completedBy           String?     // User who marked complete
-  
-  // Dependencies
-  dependsOn             String?     // ID of milestone that must complete first
-  blockedReason         String?     // If blocked, why
-  
-  // Due Date
-  dueDate               DateTime?
-  isOverdue             Boolean     @default(false)
-  
-  // Automation
-  automationTriggered   Boolean     @default(false) // Has automation fired for this milestone
-  
-  // Timestamps
-  createdAt             DateTime    @default(now())
-  updatedAt             DateTime    @updatedAt
-  
-  // Relations
-  project               Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  
-  @@index([projectId])
-  @@index([category])
-  @@index([isComplete])
-  @@index([dueDate])
-}
-
-// Document vault for project paperwork
-model ProjectDocument {
-  id                    String      @id @default(cuid())
-  projectId             String
-  
-  // Document Info
-  name                  String      // Display name
-  documentType          String      // Contract, Permit, UtilityApp, HOAApproval, Inspection, Engineering, BOM
-  description           String?
-  
-  // File Storage
-  fileUrl               String      // URL to stored file (S3, Vercel Blob, etc.)
-  fileName              String      // Original filename
-  fileSize              Int?        // Size in bytes
-  mimeType              String?     // e.g., application/pdf
-  
-  // Status
-  status                String      @default("pending") // pending, approved, rejected, expired
-  isApproved            Boolean     @default(false)
-  approvedAt            DateTime?
-  approvedBy            String?     // User who approved
-  rejectionReason       String?
-  
-  // Expiration (for permits, insurance, etc.)
-  expiresAt             DateTime?
-  
-  // Metadata
-  uploadedBy            String?     // User who uploaded
-  notes                 String?
-  metadata              Json?
-  
-  // Timestamps
-  createdAt             DateTime    @default(now())
-  updatedAt             DateTime    @updatedAt
-  
-  // Relations
-  project               Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  
-  @@index([projectId])
-  @@index([documentType])
-  @@index([status])
-}
-
-model User {
-  id                     String       @id @default(cuid())
-  email                  String       @unique
-  name                   String?
-  clerkId                String       @unique
-  
-  // Multi-tenancy & Role
-  companyId              String?      // Company this user belongs to
-  role                   UserRole     @default(ADMIN) // User's role within the company
-  
-  // Personal Stripe (deprecated - use Company.stripeCustomerId for billing)
-  stripeCustomer         String?      @unique
-  
-  // Legacy fields (kept for migration compatibility)
-  subscriptionPlan       String?      @default("free")
-  subscriptionStatus     String?
-  subscriptionCurrentEnd DateTime?
-  
-  // Profile
-  avatarUrl              String?
-  phone                  String?
-  jobTitle               String?
-  
-  // Timestamps
-  createdAt              DateTime     @default(now())
-  updatedAt              DateTime     @updatedAt
-  
-  // Relations
-  company                Company?     @relation(fields: [companyId], references: [id])
-  automations            Automation[]
-  leads                  Lead[]       // Leads created by this user
-  assignedLeads          Lead[]       @relation("AssignedLeads") // Leads assigned to this user
-  assignedProjects       Project[]    @relation("AssignedProjects") // Projects assigned to this user
 
   @@index([clerkId])
   @@index([email])
-  @@index([companyId])
   @@index([role])
+}
+
+// =============================================================================
+// LEAD — Potential customers
+// =============================================================================
+
+model Lead {
+  id      String  @id @default(cuid())
+  agentId String?
+  agent   Agent?  @relation(fields: [agentId], references: [id])
+
+  name    String?
+  email   String?
+  phone   String?
+  address String?
+
+  status String  @default("new") // "new", "qualified", "disqualified", "proposed", "sold"
+  source String? // Form source (landing page, referral, etc.)
+
+  // Relations
+  solarQualification SolarQualification?
+  proposals          Proposal[]
+  project            Project?
+  messages           Message[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([agentId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// =============================================================================
+// SOLAR QUALIFICATION — Roof viability assessment (1:1 with Lead)
+// =============================================================================
+
+model SolarQualification {
+  id     String @id @default(cuid())
+  leadId String @unique
+  lead   Lead   @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  // Solar API Data
+  roofAreaSqM       Float
+  sunshineHoursYear Float
+  shadingPercent    Float
+
+  // Qualification Results (from domain logic)
+  roofViable Boolean
+  solarScore Int // 0-100
+  confidence String // "high", "medium", "low"
+
+  // Raw API Response
+  rawApiData Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([leadId])
+  @@index([roofViable])
+}
+
+// =============================================================================
+// PROPOSAL — Solar system proposals (1:N with Lead)
+// =============================================================================
+
+model Proposal {
+  id     String @id @default(cuid())
+  leadId String
+  lead   Lead   @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  // Financial (domain-computed values stored here)
+  totalSystemCost        Float
+  netCostAfterIncentives Float
+  estMonthlyPayment      Float
+  estMonthlySavings      Float
+
+  pricingMode String  @default("loan") // "loan", "cash", "ppa"
+  pdfUrl      String?
+
+  createdAt DateTime @default(now())
+
+  @@index([leadId])
+}
+
+// =============================================================================
+// PROJECT — Installation projects (1:1 with Lead, created when lead closes)
+// =============================================================================
+
+model Project {
+  id     String @id @default(cuid())
+  leadId String @unique
+  lead   Lead   @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  status String @default("active") // "active", "on_hold", "completed", "cancelled"
+
+  // Relations
+  milestones ProjectMilestone[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([leadId])
+  @@index([status])
+}
+
+// =============================================================================
+// PROJECT MILESTONE — Project phase tracking (1:N with Project)
+// =============================================================================
+
+model ProjectMilestone {
+  id        String  @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  name        String // e.g., "Site Survey", "Contract Signed"
+  unlockKey   String // e.g., "site_survey", "contract_signed" — links to commission
+  description String?
+  sortOrder   Int     @default(0)
+
+  status      String    @default("pending") // "pending", "completed"
+  completedAt DateTime?
+  completedBy String? // Agent ID who completed
+
+  // Relations
+  commissionUnlocks CommissionUnlock[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([projectId])
+  @@index([status])
+  @@index([unlockKey])
+}
+
+// =============================================================================
+// COMMISSION UNLOCK — Commission tracking (1:N with Milestone)
+// =============================================================================
+
+model CommissionUnlock {
+  id          String           @id @default(cuid())
+  milestoneId String
+  milestone   ProjectMilestone @relation(fields: [milestoneId], references: [id], onDelete: Cascade)
+  agentId     String
+  agent       Agent            @relation(fields: [agentId], references: [id])
+
+  unlockKey       String // Same as milestone.unlockKey for easy querying
+  status          String @default("pending") // "pending", "confirmed", "paid"
+  amountEstimated Float  @default(0)
+  amountConfirmed Float  @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([milestoneId])
+  @@index([agentId])
+  @@index([status])
+  @@index([unlockKey])
+}
+
+// =============================================================================
+// MESSAGE — Twilio inbound/outbound SMS (1:N with Lead)
+// =============================================================================
+
+model Message {
+  id     String @id @default(cuid())
+  leadId String
+  lead   Lead   @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  direction         String // "inbound", "outbound"
+  channel           String  @default("sms") // "sms", "email"
+  body              String
+  providerMessageId String?
+
+  sentAt DateTime @default(now())
+
+  @@index([leadId])
+  @@index([direction])
+  @@index([sentAt])
+}
+
+// =============================================================================
+// AUTOMATION EVENT — Automation trigger history
+// =============================================================================
+
+model AutomationEvent {
+  id     String @id @default(cuid())
+  leadId String
+
+  eventType   String // "no_reply_3d", "new_lead_flash", etc.
+  triggeredAt DateTime
+  handled     Boolean   @default(false)
+  handledAt   DateTime?
+
+  metadata Json?
+
+  @@index([leadId])
+  @@index([handled])
+  @@index([triggeredAt])
 }

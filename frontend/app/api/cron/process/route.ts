@@ -1,5 +1,5 @@
 // PRIMUS HOME PRO - Cron Job: Process Stale Leads
-// Triggers "no_reply_3d" automation for inactive leads
+// Triggers "lead.no_reply_3d" automation for inactive leads
 
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
@@ -29,13 +29,13 @@ export async function GET(request: Request) {
 
     console.log('[CRON] Starting stale lead processing...')
 
-    // Find leads inactive for > 3 days
+    // Find leads inactive for > 3 days (Contract v1.0: status field)
     const cutoffDate = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) // 3 days ago
 
     const staleLeads = await prisma.lead.findMany({
       where: {
-        stage: {
-          notIn: ['Closed', 'Lost'],
+        status: {
+          notIn: ['sold', 'disqualified'],
         },
         updatedAt: {
           lt: cutoffDate,

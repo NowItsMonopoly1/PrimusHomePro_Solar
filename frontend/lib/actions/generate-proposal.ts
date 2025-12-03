@@ -1,39 +1,49 @@
-// PRIMUS HOME PRO - Generate Proposal Server Action
-// Module H: Instant Proposal Generator
-// Creates financial proposals from solar site analysis data
+// PRIMUS HOME PRO - Generate Proposal Server Action (Contract v1.0)
+// Creates financial proposals for leads with solar qualification
 
 'use server'
 
 import { prisma } from '@/lib/db/prisma'
 import { auth } from '@clerk/nextjs/server'
-import {
-  generateProposalData,
-  getUtilityRateForState,
-  STANDARD_PANEL_WATTAGE,
-  type ProposalData,
-} from '@/lib/solar/solar-calculations'
+import { revalidatePath } from 'next/cache'
 import type { ActionResponse } from '@/types'
 
 // ============================================================================
-// TYPES
+// TYPES (Contract v1.0 Simplified)
 // ============================================================================
 
 interface GenerateProposalInput {
   leadId: string
-  stateCode?: string
-  customUtilityRate?: number
+  pricingMode?: 'loan' | 'cash' | 'ppa'
 }
 
 interface ProposalSummary {
   id: string
   leadId: string
-  systemSizeKW: number
-  panelCount: number
-  priceAfterITC: number
-  netSavings25Yr: number
-  breakEvenYear: number | null
-  recommendedOption: string
-  generatedAt: Date
+  totalSystemCost: number
+  netCostAfterIncentives: number
+  estMonthlyPayment: number
+  estMonthlySavings: number
+  pricingMode: string
+  createdAt: Date
+}
+
+// ============================================================================
+// SOLAR CALCULATION HELPERS
+// Contract v1.0: Keep calculation logic simple
+// ============================================================================
+
+const COST_PER_WATT = 2.85 // Industry average
+const FEDERAL_ITC_RATE = 0.30 // 30% federal tax credit
+const LOAN_RATE_10YR = 0.055 // 5.5% APR
+const AVG_UTILITY_RATE = 0.15 // $/kWh
+
+function calculateMonthlyPayment(principal: number, annualRate: number, years: number): number {
+  const monthlyRate = annualRate / 12
+  const numPayments = years * 12
+  if (monthlyRate === 0) return principal / numPayments
+  return (principal * monthlyRate * Math.pow(1 + monthlyRate, numPayments)) / 
+         (Math.pow(1 + monthlyRate, numPayments) - 1)
 }
 
 // ============================================================================
@@ -41,145 +51,138 @@ interface ProposalSummary {
 // ============================================================================
 
 /**
- * Generate a financial proposal for a lead with solar data
- * 
- * Flow:
- * 1. Verify lead exists and has solar data
- * 2. Calculate production estimates
- * 3. Calculate costs with incentives
- * 4. Generate 25-year savings forecast
- * 5. Create financial scenarios (Cash, Loan, PPA)
- * 6. Store proposal in database
- * 7. Create lead event for tracking
+ * Generate a financial proposal for a lead with solar qualification
+ * Contract v1.0: Simplified flow using SolarQualification model
  */
 export async function generateProposal(
   input: GenerateProposalInput
 ): Promise<ActionResponse<ProposalSummary>> {
   try {
-    // Authenticate user
+    // Authenticate agent
     const { userId: clerkUserId } = await auth()
     if (!clerkUserId) {
       return { success: false, error: 'Unauthorized' }
     }
 
-    const user = await prisma.user.findUnique({
+    const agent = await prisma.agent.findUnique({
       where: { clerkId: clerkUserId },
     })
 
-    if (!user) {
-      return { success: false, error: 'User not found' }
+    if (!agent) {
+      return { success: false, error: 'Agent not found' }
     }
 
-    // Fetch lead with solar data
+    // Fetch lead with solar qualification
     const lead = await prisma.lead.findUnique({
       where: { id: input.leadId },
-      include: { siteSurvey: true },
+      include: { solarQualification: true },
     })
 
     if (!lead) {
       return { success: false, error: 'Lead not found' }
     }
 
-    // Verify lead belongs to user
-    if (lead.userId !== user.id) {
+    // Verify lead belongs to agent
+    if (lead.agentId !== agent.id) {
       return { success: false, error: 'Unauthorized access to lead' }
     }
 
-    // Check if solar data is available
-    if (!lead.solarEnriched || !lead.maxPanelsCount || !lead.maxSunshineHoursYear) {
+    // Check if solar qualification exists
+    if (!lead.solarQualification) {
       return { 
         success: false, 
-        error: 'Solar analysis required before generating proposal. Please ensure the lead has an address and solar data has been fetched.' 
+        error: 'Solar qualification required before generating proposal. Please qualify the lead first.' 
       }
     }
 
-    // Determine state code from address if not provided
-    let stateCode = input.stateCode
-    if (!stateCode && lead.address) {
-      // Try to extract state from address (simple regex)
-      const stateMatch = lead.address.match(/\b([A-Z]{2})\b(?=\s*\d{5}|\s*$)/i)
-      stateCode = stateMatch ? stateMatch[1].toUpperCase() : undefined
+    const qual = lead.solarQualification
+    
+    // Check if roof is viable
+    if (!qual.roofViable) {
+      return {
+        success: false,
+        error: 'This property is not suitable for solar installation based on the roof analysis.',
+      }
     }
 
-    // Generate proposal data using calculation engine
-    const proposalData = generateProposalData(
-      lead.id,
-      lead.maxPanelsCount,
-      lead.maxSunshineHoursYear,
-      stateCode,
-      input.customUtilityRate
-    )
+    // Calculate system size based on roof area
+    // Assume ~20W per sq ft, and 1 sqm = 10.764 sq ft
+    const roofAreaSqFt = qual.roofAreaSqM * 10.764
+    const usableRoofPct = (100 - qual.shadingPercent) / 100
+    const systemSizeWatts = Math.min(roofAreaSqFt * 20 * usableRoofPct, 15000) // Cap at 15kW
+    const systemSizeKW = systemSizeWatts / 1000
 
-    // Store proposal in database
+    // Annual production estimate
+    const annualProductionKWh = systemSizeKW * qual.sunshineHoursYear * 0.80 // 80% efficiency factor
+
+    // Cost calculations
+    const totalSystemCost = systemSizeWatts * COST_PER_WATT
+    const federalITC = totalSystemCost * FEDERAL_ITC_RATE
+    const netCostAfterIncentives = totalSystemCost - federalITC
+
+    // Savings calculations
+    const annualSavings = annualProductionKWh * AVG_UTILITY_RATE
+    const estMonthlySavings = annualSavings / 12
+
+    // Payment calculation based on pricing mode
+    const pricingMode = input.pricingMode || 'loan'
+    let estMonthlyPayment: number
+
+    switch (pricingMode) {
+      case 'cash':
+        estMonthlyPayment = 0 // No monthly payment for cash
+        break
+      case 'ppa':
+        // PPA: Pay per kWh produced, typically 80% of utility rate
+        estMonthlyPayment = (annualProductionKWh / 12) * (AVG_UTILITY_RATE * 0.80)
+        break
+      case 'loan':
+      default:
+        // 10-year loan on net cost
+        estMonthlyPayment = calculateMonthlyPayment(netCostAfterIncentives, LOAN_RATE_10YR, 10)
+        break
+    }
+
+    // Create proposal in database
     const proposal = await prisma.proposal.create({
       data: {
         leadId: lead.id,
-        
-        // System Specifications
-        systemSizeWatts: proposalData.production.systemSizeWatts,
-        systemSizeKW: proposalData.production.systemSizeKW,
-        panelCount: lead.maxPanelsCount,
-        panelWattage: STANDARD_PANEL_WATTAGE,
-        
-        // Production Estimates
-        annualProductionKWh: proposalData.production.annualProductionKWh,
-        lifetimeProductionKWh: proposalData.production.lifetimeProductionKWh,
-        
-        // Cost Breakdown
-        grossSystemCost: proposalData.costs.grossSystemCost,
-        federalITC: proposalData.costs.federalITC,
-        stateRebate: proposalData.costs.stateRebate,
-        priceAfterITC: proposalData.costs.priceAfterITC,
-        costPerWatt: proposalData.costs.effectiveCostPerWatt,
-        
-        // Savings Projections
-        year1Savings: proposalData.savings.year1Savings,
-        netSavings25Yr: proposalData.savings.netSavings25Yr,
-        breakEvenYear: proposalData.savings.breakEvenYear,
-        
-        // Financial Scenarios
-        cashScenario: proposalData.financialScenarios.cash as unknown as object,
-        loan10YearScenario: proposalData.financialScenarios.loan10Year as unknown as object,
-        loan15YearScenario: proposalData.financialScenarios.loan15Year as unknown as object,
-        ppaScenario: proposalData.financialScenarios.ppa as unknown as object,
-        recommendedOption: proposalData.financialScenarios.recommendedOption,
-        
-        // Assumptions
-        utilityRate: proposalData.assumptions.utilityRate,
-        utilityEscalation: proposalData.assumptions.utilityEscalation,
-        panelEfficiency: proposalData.assumptions.panelEfficiency,
-        degradationRate: proposalData.assumptions.degradationRate,
-        
-        // Metadata
-        stateCode,
-        status: 'draft',
-        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+        totalSystemCost,
+        netCostAfterIncentives,
+        estMonthlyPayment,
+        estMonthlySavings,
+        pricingMode,
       },
     })
 
-    // Create lead event for tracking
-    await prisma.leadEvent.create({
+    // Log via AutomationEvent
+    await prisma.automationEvent.create({
       data: {
         leadId: lead.id,
-        type: 'PROPOSAL_GENERATED',
-        content: `Financial proposal generated: ${proposalData.production.systemSizeKW.toFixed(1)}kW system, $${Math.round(proposalData.savings.netSavings25Yr).toLocaleString()} estimated 25-year savings`,
+        eventType: 'proposal_generated',
+        triggeredAt: new Date(),
+        handled: true,
+        handledAt: new Date(),
         metadata: {
           proposalId: proposal.id,
-          systemSizeKW: proposalData.production.systemSizeKW,
-          priceAfterITC: proposalData.costs.priceAfterITC,
-          netSavings25Yr: proposalData.savings.netSavings25Yr,
-          recommendedOption: proposalData.financialScenarios.recommendedOption,
+          systemSizeKW,
+          totalSystemCost,
+          netCostAfterIncentives,
+          pricingMode,
         },
       },
     })
 
-    // Update lead stage to Qualified if still New
-    if (lead.stage === 'New') {
+    // Update lead status to 'proposed' if not already sold
+    if (lead.status !== 'sold') {
       await prisma.lead.update({
         where: { id: lead.id },
-        data: { stage: 'Qualified' },
+        data: { status: 'proposed' },
       })
     }
+
+    revalidatePath('/dashboard/leads')
+    revalidatePath(`/dashboard/leads/${lead.id}`)
 
     console.log(`[Proposal] Generated proposal ${proposal.id} for lead ${lead.id}`)
 
@@ -188,13 +191,12 @@ export async function generateProposal(
       data: {
         id: proposal.id,
         leadId: proposal.leadId,
-        systemSizeKW: proposal.systemSizeKW,
-        panelCount: proposal.panelCount,
-        priceAfterITC: proposal.priceAfterITC,
-        netSavings25Yr: proposal.netSavings25Yr,
-        breakEvenYear: proposal.breakEvenYear,
-        recommendedOption: proposal.recommendedOption,
-        generatedAt: proposal.generatedAt,
+        totalSystemCost: proposal.totalSystemCost,
+        netCostAfterIncentives: proposal.netCostAfterIncentives,
+        estMonthlyPayment: proposal.estMonthlyPayment,
+        estMonthlySavings: proposal.estMonthlySavings,
+        pricingMode: proposal.pricingMode,
+        createdAt: proposal.createdAt,
       },
     }
   } catch (error) {
@@ -205,6 +207,10 @@ export async function generateProposal(
     }
   }
 }
+
+// ============================================================================
+// QUERY FUNCTIONS
+// ============================================================================
 
 /**
  * Get all proposals for a lead
@@ -220,21 +226,22 @@ export async function getLeadProposals(
 
     const proposals = await prisma.proposal.findMany({
       where: { leadId },
-      orderBy: { generatedAt: 'desc' },
-      select: {
-        id: true,
-        leadId: true,
-        systemSizeKW: true,
-        panelCount: true,
-        priceAfterITC: true,
-        netSavings25Yr: true,
-        breakEvenYear: true,
-        recommendedOption: true,
-        generatedAt: true,
-      },
+      orderBy: { createdAt: 'desc' },
     })
 
-    return { success: true, data: proposals }
+    return { 
+      success: true, 
+      data: proposals.map(p => ({
+        id: p.id,
+        leadId: p.leadId,
+        totalSystemCost: p.totalSystemCost,
+        netCostAfterIncentives: p.netCostAfterIncentives,
+        estMonthlyPayment: p.estMonthlyPayment,
+        estMonthlySavings: p.estMonthlySavings,
+        pricingMode: p.pricingMode,
+        createdAt: p.createdAt,
+      }))
+    }
   } catch (error) {
     console.error('[Proposal] Error fetching proposals:', error)
     return {
@@ -249,7 +256,7 @@ export async function getLeadProposals(
  */
 export async function getProposalDetails(
   proposalId: string
-): Promise<ActionResponse<ProposalData & { id: string; status: string }>> {
+): Promise<ActionResponse<ProposalSummary & { lead: { name: string | null; address: string | null } }>> {
   try {
     const { userId: clerkUserId } = await auth()
     if (!clerkUserId) {
@@ -258,118 +265,36 @@ export async function getProposalDetails(
 
     const proposal = await prisma.proposal.findUnique({
       where: { id: proposalId },
-      include: { lead: true },
+      include: { 
+        lead: {
+          select: { name: true, address: true }
+        }
+      },
     })
 
     if (!proposal) {
       return { success: false, error: 'Proposal not found' }
     }
 
-    // Reconstruct ProposalData from stored fields
-    const proposalData: ProposalData & { id: string; status: string } = {
-      id: proposal.id,
-      status: proposal.status,
-      leadId: proposal.leadId,
-      generatedAt: proposal.generatedAt,
-      production: {
-        systemSizeWatts: proposal.systemSizeWatts,
-        systemSizeKW: proposal.systemSizeKW,
-        annualProductionKWh: proposal.annualProductionKWh,
-        year1ProductionKWh: proposal.annualProductionKWh,
-        lifetimeProductionKWh: proposal.lifetimeProductionKWh,
-        degradedProductionByYear: [], // Not stored, would need recalculation
-      },
-      costs: {
-        grossSystemCost: proposal.grossSystemCost,
-        federalITC: proposal.federalITC,
-        stateRebate: proposal.stateRebate,
-        totalIncentives: proposal.federalITC + proposal.stateRebate,
-        priceAfterITC: proposal.priceAfterITC,
-        effectiveCostPerWatt: proposal.costPerWatt,
-      },
-      savings: {
-        year1Savings: proposal.year1Savings,
-        year5Savings: 0, // Would need recalculation
-        year10Savings: 0,
-        year25Savings: 0,
-        netSavings25Yr: proposal.netSavings25Yr,
-        cumulativeSavingsByYear: [],
-        utilityRatesByYear: [],
-        breakEvenYear: proposal.breakEvenYear,
-      },
-      financialScenarios: {
-        cash: proposal.cashScenario as any,
-        loan10Year: proposal.loan10YearScenario as any,
-        loan15Year: proposal.loan15YearScenario as any,
-        ppa: proposal.ppaScenario as any,
-        recommendedOption: proposal.recommendedOption as any,
-      },
-      assumptions: {
-        panelEfficiency: proposal.panelEfficiency,
-        inverterEfficiency: 0.96,
-        degradationRate: proposal.degradationRate,
-        utilityRate: proposal.utilityRate,
-        utilityEscalation: proposal.utilityEscalation,
-        federalITC: 0.30,
-        costPerWatt: proposal.costPerWatt,
+    return {
+      success: true,
+      data: {
+        id: proposal.id,
+        leadId: proposal.leadId,
+        totalSystemCost: proposal.totalSystemCost,
+        netCostAfterIncentives: proposal.netCostAfterIncentives,
+        estMonthlyPayment: proposal.estMonthlyPayment,
+        estMonthlySavings: proposal.estMonthlySavings,
+        pricingMode: proposal.pricingMode,
+        createdAt: proposal.createdAt,
+        lead: proposal.lead,
       },
     }
-
-    return { success: true, data: proposalData }
   } catch (error) {
     console.error('[Proposal] Error fetching proposal details:', error)
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to fetch proposal details',
-    }
-  }
-}
-
-/**
- * Update proposal status
- */
-export async function updateProposalStatus(
-  proposalId: string,
-  status: 'draft' | 'sent' | 'viewed' | 'accepted' | 'expired'
-): Promise<ActionResponse<{ id: string; status: string }>> {
-  try {
-    const { userId: clerkUserId } = await auth()
-    if (!clerkUserId) {
-      return { success: false, error: 'Unauthorized' }
-    }
-
-    const proposal = await prisma.proposal.update({
-      where: { id: proposalId },
-      data: { status },
-      select: { id: true, status: true, leadId: true },
-    })
-
-    // Create lead event for status changes
-    if (status === 'sent' || status === 'accepted') {
-      await prisma.leadEvent.create({
-        data: {
-          leadId: proposal.leadId,
-          type: status === 'sent' ? 'PROPOSAL_SENT' : 'PROPOSAL_ACCEPTED',
-          content: `Proposal ${status}`,
-          metadata: { proposalId: proposal.id },
-        },
-      })
-    }
-
-    // Update lead stage to Closed if proposal accepted
-    if (status === 'accepted') {
-      await prisma.lead.update({
-        where: { id: proposal.leadId },
-        data: { stage: 'Closed' },
-      })
-    }
-
-    return { success: true, data: { id: proposal.id, status: proposal.status } }
-  } catch (error) {
-    console.error('[Proposal] Error updating proposal status:', error)
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to update proposal status',
     }
   }
 }

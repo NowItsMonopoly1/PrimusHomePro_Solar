@@ -1,13 +1,11 @@
 'use client'
 
 // PRIMUS HOME PRO - Proposal Presentation Component
-// Full-page sales presentation with e-signature acceptance
+// Full-page sales presentation with acceptance flow
+// Contract v1.0: Simplified proposal model
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { SolarDesignViewer } from '@/components/proposal/SolarDesignViewer'
-import { FinancialScenarios } from '@/components/proposal/FinancialScenarios'
-import { ESignaturePad } from '@/components/proposal/ESignaturePad'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -22,40 +20,27 @@ import {
   User,
   Mail,
   Shield,
-  FileText
+  DollarSign
 } from 'lucide-react'
 
+// Contract v1.0: Simplified proposal type
 interface ProposalPresentationProps {
   proposalId: string
   accessToken: string
   proposal: {
     id: string
-    status: string
-    systemSizeKW: number
-    panelCount: number
-    annualProductionKWh: number
-    grossSystemCost: number
-    federalITC: number
-    priceAfterITC: number
-    year1Savings: number
-    netSavings25Yr: number
-    breakEvenYear: number | null
-    cashScenario: any
-    loan10YearScenario: any
-    loan15YearScenario: any
-    ppaScenario: any
-    recommendedOption: string
-    generatedAt: Date
-    expiresAt: Date | null
+    totalSystemCost: number
+    netCostAfterIncentives: number
+    estMonthlyPayment: number
+    estMonthlySavings: number
+    pricingMode: string
+    pdfUrl: string | null
+    createdAt: Date
   }
   lead: {
     name: string | null
     address: string | null
   }
-  siteSurvey: {
-    roofImageUrl: string | null
-    totalRoofAreaSqM: number | null
-  } | null
 }
 
 export function ProposalPresentation({
@@ -63,13 +48,8 @@ export function ProposalPresentation({
   accessToken,
   proposal,
   lead,
-  siteSurvey,
 }: ProposalPresentationProps) {
   const router = useRouter()
-  const [selectedScenario, setSelectedScenario] = useState<'CASH' | 'LOAN_10' | 'LOAN_15' | 'PPA'>(
-    proposal.recommendedOption as any
-  )
-  const [signature, setSignature] = useState<string | null>(null)
   const [customerName, setCustomerName] = useState(lead.name || '')
   const [customerEmail, setCustomerEmail] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -78,12 +58,6 @@ export function ProposalPresentation({
 
   const handleAccept = async () => {
     setError(null)
-
-    // Validate
-    if (!signature) {
-      setError('Please sign the proposal to continue')
-      return
-    }
 
     if (!customerName.trim()) {
       setError('Please enter your name')
@@ -100,9 +74,6 @@ export function ProposalPresentation({
     try {
       const result = await acceptProposal({
         proposalId,
-        accessToken,
-        signatureImageBase64: signature,
-        selectedScenario,
         customerName: customerName.trim(),
         customerEmail: customerEmail.trim(),
       })
@@ -139,15 +110,15 @@ export function ProposalPresentation({
               <ul className="mt-2 space-y-2 text-sm text-green-700">
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
-                  <span>You'll receive a confirmation email with your signed agreement</span>
+                  <span>You'll receive a confirmation email</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
-                  <span>Our team will contact you within 24 hours to schedule your site survey</span>
+                  <span>Our team will contact you within 24 hours</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
-                  <span>Installation typically begins within 2-4 weeks of approval</span>
+                  <span>Installation typically begins within 2-4 weeks</span>
                 </li>
               </ul>
             </div>
@@ -187,7 +158,7 @@ export function ProposalPresentation({
         </div>
       </header>
 
-      {/* Main Content */}
+      {/* Main Content - Contract v1.0 Simplified */}
       <main className="mx-auto max-w-5xl space-y-8 p-6">
         {/* Welcome Section */}
         <section className="text-center">
@@ -195,7 +166,7 @@ export function ProposalPresentation({
             {lead.name ? `Hello, ${lead.name}!` : 'Your Solar Proposal'}
           </h2>
           <p className="mt-2 text-muted-foreground">
-            Here's your personalized solar system design and financial analysis
+            Here's your personalized solar system proposal
           </p>
           {lead.address && (
             <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-blue-50 px-4 py-2 text-sm text-blue-700">
@@ -205,75 +176,52 @@ export function ProposalPresentation({
           )}
         </section>
 
-        {/* Solar Design */}
-        <SolarDesignViewer
-          imageUrl={siteSurvey?.roofImageUrl}
-          systemSizeKW={proposal.systemSizeKW}
-          panelCount={proposal.panelCount}
-          annualProductionKWh={proposal.annualProductionKWh}
-          roofAreaSqM={siteSurvey?.totalRoofAreaSqM}
-        />
-
-        {/* 25-Year Savings Hero - The Closer */}
+        {/* Monthly Savings Hero */}
         <div className="rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 p-8 text-center text-white shadow-2xl">
-          <p className="text-lg font-medium opacity-90 mb-2">Your Total 25-Year Savings</p>
+          <p className="text-lg font-medium opacity-90 mb-2">Estimated Monthly Savings</p>
           <p className="text-5xl md:text-6xl font-extrabold tracking-tight">
-            ${Math.round(proposal.netSavings25Yr).toLocaleString()}
+            ${Math.round(proposal.estMonthlySavings).toLocaleString()}
           </p>
           <p className="mt-3 text-emerald-100">
-            That's ${Math.round(proposal.year1Savings).toLocaleString()} saved in year one alone
+            That's ${Math.round(proposal.estMonthlySavings * 12).toLocaleString()} saved per year
           </p>
-          {proposal.breakEvenYear && (
-            <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-2">
-              <CheckCircle2 className="h-5 w-5" />
-              <span className="font-semibold">Break-even in {proposal.breakEvenYear} years</span>
-            </div>
-          )}
         </div>
 
-        {/* Cost Summary */}
+        {/* Cost Summary - Contract v1.0 Fields */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5 text-blue-600" />
+              <DollarSign className="h-5 w-5 text-blue-600" />
               Investment Summary
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid gap-4 sm:grid-cols-3">
               <div className="rounded-lg border p-4 text-center">
-                <div className="text-sm text-muted-foreground">Gross System Cost</div>
-                <div className="text-2xl font-bold">${Math.round(proposal.grossSystemCost).toLocaleString()}</div>
+                <div className="text-sm text-muted-foreground">Total System Cost</div>
+                <div className="text-2xl font-bold">${Math.round(proposal.totalSystemCost).toLocaleString()}</div>
               </div>
               <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-center">
-                <div className="text-sm text-green-700">Federal Tax Credit (30%)</div>
-                <div className="text-2xl font-bold text-green-600">-${Math.round(proposal.federalITC).toLocaleString()}</div>
+                <div className="text-sm text-green-700">After Incentives</div>
+                <div className="text-2xl font-bold text-green-600">${Math.round(proposal.netCostAfterIncentives).toLocaleString()}</div>
               </div>
               <div className="rounded-lg bg-primary/5 border-primary/20 border p-4 text-center">
-                <div className="text-sm text-primary">Your Net Cost</div>
-                <div className="text-2xl font-bold text-primary">${Math.round(proposal.priceAfterITC).toLocaleString()}</div>
+                <div className="text-sm text-primary">Est. Monthly Payment</div>
+                <div className="text-2xl font-bold text-primary">${Math.round(proposal.estMonthlyPayment).toLocaleString()}</div>
               </div>
             </div>
+            <p className="mt-4 text-center text-sm text-muted-foreground">
+              Pricing Mode: <span className="font-medium">{proposal.pricingMode}</span>
+            </p>
           </CardContent>
         </Card>
-
-        {/* Financial Scenarios */}
-        <FinancialScenarios
-          cashScenario={proposal.cashScenario}
-          loan10YearScenario={proposal.loan10YearScenario}
-          loan15YearScenario={proposal.loan15YearScenario}
-          ppaScenario={proposal.ppaScenario}
-          recommendedOption={proposal.recommendedOption}
-          selectedScenario={selectedScenario}
-          onSelectScenario={setSelectedScenario}
-        />
 
         {/* Acceptance Section */}
         <div className="space-y-6 rounded-xl border-2 border-primary/20 bg-white p-6 shadow-lg">
           <div className="text-center">
             <h3 className="text-xl font-bold">Accept Your Proposal</h3>
             <p className="mt-1 text-muted-foreground">
-              Complete the form below to lock in your solar savings
+              Complete the form below to get started
             </p>
           </div>
 
@@ -304,28 +252,6 @@ export function ProposalPresentation({
             </div>
           </div>
 
-          {/* Selected Option Summary */}
-          <div className="rounded-lg bg-muted/50 p-4">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Selected Payment Option:</span>
-              <span className="font-bold text-primary">
-                {selectedScenario === 'CASH' && 'Cash Purchase'}
-                {selectedScenario === 'LOAN_10' && '10-Year Solar Loan'}
-                {selectedScenario === 'LOAN_15' && '15-Year Solar Loan'}
-                {selectedScenario === 'PPA' && 'Power Purchase Agreement'}
-              </span>
-            </div>
-          </div>
-
-          {/* E-Signature with Visual Arrow */}
-          <div className="relative">
-            <div className="absolute -top-8 left-1/2 -translate-x-1/2 flex items-center gap-2 text-solar-primary font-bold animate-bounce">
-              <span>Sign Here</span>
-              <span className="text-2xl">👇</span>
-            </div>
-            <ESignaturePad onSignatureChange={setSignature} />
-          </div>
-
           {/* Error Display */}
           {error && (
             <div className="flex items-center gap-2 rounded-lg bg-red-50 p-4 text-red-700">
@@ -339,7 +265,7 @@ export function ProposalPresentation({
             size="lg"
             className="w-full h-14 text-lg"
             onClick={handleAccept}
-            disabled={isSubmitting || !signature}
+            disabled={isSubmitting}
           >
             {isSubmitting ? (
               <>
@@ -349,16 +275,15 @@ export function ProposalPresentation({
             ) : (
               <>
                 <CheckCircle2 className="mr-2 h-5 w-5" />
-                Sign & Accept Proposal
+                Accept Proposal
               </>
             )}
           </Button>
 
           {/* Legal Disclaimer */}
           <p className="text-center text-xs text-muted-foreground">
-            By clicking "Sign & Accept", you agree to the terms of this proposal and authorize
-            the installation of the specified solar system. This agreement is subject to site
-            inspection and final approval. Your electronic signature is legally binding.
+            By clicking "Accept Proposal", you express interest in proceeding with your solar installation.
+            Our team will contact you to finalize details.
           </p>
         </div>
 
@@ -366,14 +291,8 @@ export function ProposalPresentation({
         <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground">
           <span className="flex items-center gap-1">
             <Calendar className="h-3 w-3" />
-            Generated: {new Date(proposal.generatedAt).toLocaleDateString()}
+            Generated: {new Date(proposal.createdAt).toLocaleDateString()}
           </span>
-          {proposal.expiresAt && (
-            <span className="flex items-center gap-1">
-              <AlertCircle className="h-3 w-3" />
-              Expires: {new Date(proposal.expiresAt).toLocaleDateString()}
-            </span>
-          )}
           <span>Proposal ID: {proposalId.slice(-8)}</span>
         </div>
       </main>

@@ -1,112 +1,201 @@
-// PRIMUS HOME PRO - Type Definitions
-// Centralized TypeScript types and interfaces
-// NOTE: Types are defined explicitly to avoid Prisma import issues on Vercel
+// =============================================================================
+// PRIMUS HOME PRO — TYPE DEFINITIONS (Contract v1.0 Aligned)
+// =============================================================================
+// These types mirror the canonical Prisma schema exactly.
+// Do NOT add fields without contract revision.
+// =============================================================================
 
-// Base Types (defined explicitly, not imported from Prisma)
+// =============================================================================
+// CORE MODELS (from Contract v1.0)
+// =============================================================================
+
+export interface Agent {
+  id: string
+  clerkId: string
+  email: string
+  name: string
+  phone: string | null
+  role: string // "admin", "sales", "scheduler", "installer"
+  createdAt: Date
+  updatedAt: Date
+}
+
 export interface Lead {
   id: string
-  userId: string
-  companyId: string | null
-  assignedUserId: string | null
+  agentId: string | null
   name: string | null
   email: string | null
   phone: string | null
   address: string | null
+  status: string // "new", "qualified", "disqualified", "proposed", "sold"
   source: string | null
-  score: number
-  stage: string
-  intent: string | null
-  sentiment: string | null
-  notes: string | null
-  metadata: unknown
-  roofPitch: number | null
-  maxPanelsCount: number | null
-  maxSunshineHoursYear: number | null
-  annualKwhProduction: number | null
-  carbonOffsetKg: number | null
-  siteSuitability: string | null
-  solarEnriched: boolean
-  solarEnrichedAt: Date | null
   createdAt: Date
   updatedAt: Date
 }
 
-export interface LeadEvent {
+export interface SolarQualification {
   id: string
   leadId: string
-  type: string
-  content: string | null
-  metadata: unknown
-  payload: unknown
+  roofAreaSqM: number
+  sunshineHoursYear: number
+  shadingPercent: number
+  roofViable: boolean
+  solarScore: number // 0-100
+  confidence: string // "high", "medium", "low"
+  rawApiData: unknown
   createdAt: Date
 }
 
-export interface User {
-  id: string
-  clerkId: string
-  email: string
-  name: string | null
-  stripeCustomer: string | null
-  subscriptionPlan: string | null
-  subscriptionStatus: string | null
-  subscriptionCurrentEnd: Date | null
-  createdAt: Date
-  updatedAt: Date
-}
-
-export interface Automation {
-  id: string
-  userId: string
-  companyId: string | null
-  name: string
-  trigger: string
-  action: string
-  template: string
-  enabled: boolean
-  config: unknown
-  createdAt: Date
-  updatedAt: Date
-}
-
-export interface SiteSurvey {
+export interface Proposal {
   id: string
   leadId: string
-  systemSizeKW: number | null
-  annualKwhProduction: number | null
-  panelCount: number | null
-  roofAreaSqFt: number | null
-  sunshineHours: number | null
-  carbonOffset: number | null
-  rawApiResponse: unknown
+  totalSystemCost: number
+  netCostAfterIncentives: number
+  estMonthlyPayment: number
+  estMonthlySavings: number
+  pricingMode: string // "cash", "loan", "ppa"
+  pdfUrl: string | null
+  createdAt: Date
+}
+
+export interface Project {
+  id: string
+  leadId: string
+  status: string // "active", "on_hold", "completed", "cancelled"
   createdAt: Date
   updatedAt: Date
 }
 
-// Extended types with relations
-export type LeadWithEvents = Lead & {
-  events: LeadEvent[]
+export interface ProjectMilestone {
+  id: string
+  projectId: string
+  name: string // e.g., "Site Survey", "Contract Signed"
+  unlockKey: string // "site_survey", "contract_signed" — links to commission
+  description: string | null
+  sortOrder: number
+  status: string // "pending", "completed"
+  completedAt: Date | null
+  completedBy: string | null
+  createdAt: Date
+  updatedAt: Date
 }
 
-export type LeadWithUser = Lead & {
-  user: User
+export interface CommissionUnlock {
+  id: string
+  milestoneId: string
+  agentId: string
+  unlockKey: string
+  status: string // "pending", "confirmed", "paid"
+  amountEstimated: number
+  amountConfirmed: number
+  createdAt: Date
+  updatedAt: Date
 }
 
-export type LeadWithSolar = Lead & {
-  siteSurvey: SiteSurvey | null
+export interface Message {
+  id: string
+  leadId: string
+  direction: string // "inbound", "outbound"
+  channel: string // "sms", "email"
+  body: string
+  providerMessageId: string | null
+  sentAt: Date
+}
+
+export interface AutomationEvent {
+  id: string
+  leadId: string
+  eventType: string
+  triggeredAt: Date
+  handled: boolean
+  handledAt: Date | null
+  metadata: unknown
+}
+
+// =============================================================================
+// EXTENDED TYPES (with relations)
+// =============================================================================
+
+export type LeadWithAgent = Lead & {
+  agent: Agent | null
+}
+
+export type LeadWithQualification = Lead & {
+  solarQualification: SolarQualification | null
+}
+
+export type LeadWithProposals = Lead & {
+  proposals: Proposal[]
+}
+
+export type LeadWithProject = Lead & {
+  project: Project | null
+}
+
+export type LeadWithMessages = Lead & {
+  messages: Message[]
+}
+
+// Message with Lead relation (for inbox)
+export type MessageWithLead = Message & {
+  lead: Lead
 }
 
 export type LeadFull = Lead & {
-  events: LeadEvent[]
-  user: User
-  siteSurvey: SiteSurvey | null
+  agent: Agent | null
+  solarQualification: SolarQualification | null
+  proposals: Proposal[]
+  project: Project | null
+  messages: Message[]
+}
+
+export type ProjectWithMilestones = Project & {
+  milestones: ProjectMilestone[]
+}
+
+export type ProjectWithLead = Project & {
+  lead: Lead
+}
+
+export type ProjectFull = Project & {
+  lead: Lead
+  milestones: ProjectMilestone[]
+}
+
+export type AgentWithLeads = Agent & {
+  leads: Lead[]
+}
+
+export type AgentWithCommissions = Agent & {
+  commissionUnlocks: CommissionUnlock[]
+}
+
+// =============================================================================
+// CRM / UI TYPES
+// =============================================================================
+
+export type LeadWithMeta = Lead & {
+  lastEventAt?: Date
+  lastIntent?: string
+  lastScore?: number
+  lastSentiment?: string
+  project?: { id: string } | null
+  messages?: Message[]
 }
 
 // AI Types
 export type AIProvider = 'claude' | 'gemini'
-
+export type AIChannel = 'email' | 'sms'
+export type AITone = 'default' | 'friendly' | 'professional' | 'casual' | 'shorter' | 'formal'
 export type AIIntent = 'Booking' | 'Info' | 'Pricing' | 'Support' | 'Spam'
-
 export type AISentiment = 'Positive' | 'Neutral' | 'Negative'
+
+export interface AIReplyDraft {
+  channel: AIChannel
+  body: string
+  tone?: AITone
+  suggestedSubject?: string
+}
 
 export interface AIAnalysis {
   intent: AIIntent
@@ -116,63 +205,20 @@ export interface AIAnalysis {
   suggestedResponse?: string
 }
 
-// Lead Event Types
-export type LeadEventType =
-  | 'EMAIL_SENT'
-  | 'EMAIL_RECEIVED'
-  | 'SMS_SENT'
-  | 'SMS_RECEIVED'
-  | 'NOTE_ADDED'
-  | 'STAGE_CHANGE'
-  | 'AI_ANALYSIS'
-  | 'AI_DRAFT'
-  | 'FORM_SUBMIT'
-  | 'SOLAR_ANALYSIS'
-  | 'PROPOSAL_GENERATED'
-  | 'PROPOSAL_SENT'
-  | 'PROPOSAL_VIEWED'
-  | 'PROPOSAL_ACCEPTED'
-
-// Lead Stages
-export type LeadStage = 'New' | 'Contacted' | 'Qualified' | 'Closed' | 'Lost'
+// Lead Status (Contract v1.0 - lowercase strings)
+export type LeadStatus = 'new' | 'qualified' | 'disqualified' | 'proposed' | 'sold'
 
 // Automation Triggers
 export type AutomationTrigger =
-  | 'NEW_LEAD'
-  | 'NO_REPLY_3D'
-  | 'INTENT_BOOKING'
-  | 'STAGE_CHANGE'
-  | 'SOLAR_ANALYZED'
-  | 'SOLAR_VIABLE'
-  | 'SOLAR_NOT_VIABLE'
+  | 'lead.created'
+  | 'lead.qualified'
+  | 'lead.no_reply_3d'
+  | 'proposal.sent'
+  | 'proposal.viewed'
+  | 'milestone.completed'
 
 // Automation Actions
-export type AutomationAction = 'SEND_EMAIL' | 'SEND_SMS' | 'AI_FOLLOWUP' | 'WEBHOOK' | 'SOLAR_ENRICH'
-
-// Solar Site Suitability Types
-export type SiteSuitability = 'VIABLE' | 'CHALLENGING' | 'NOT_VIABLE'
-
-export interface SolarPotential {
-  maxPanelsCount: number
-  maxSunshineHoursYear: number
-  annualKwhProduction: number
-  systemSizeKW: number
-  carbonOffsetKg: number
-  estimatedSavingsYear?: number
-  paybackYears?: number
-}
-
-export interface SolarEnrichmentResult {
-  success: boolean
-  leadId: string
-  siteSuitability: SiteSuitability
-  maxPanelsCount?: number
-  maxSunshineHoursYear?: number
-  annualKwhProduction?: number
-  systemSizeKW?: number
-  estimatedSavingsYear?: number
-  error?: string
-}
+export type AutomationAction = 'send_email' | 'send_sms' | 'create_task' | 'webhook'
 
 // Server Action Return Types
 export type ActionResponse<T = unknown> =
@@ -184,81 +230,52 @@ export interface LeadCaptureInput {
   name?: string
   email?: string
   phone?: string
+  address?: string
   source: string
   message?: string
   metadata?: Record<string, unknown>
 }
 
-// CRM Types - Define explicitly to avoid Prisma type issues on Vercel
-export interface LeadWithMeta {
+// Automation Config
+export interface AutomationConfig {
+  delay?: number
+  template?: string
+  channel?: AIChannel
+  conditions?: {
+    minScore?: number
+    maxScore?: number
+    intentIn?: string[]
+    statusIn?: string[] // Contract v1.0: status not stage
+  }
+  [key: string]: unknown
+}
+
+// Automation stub type (Contract v1.0: No Automation model yet)
+// TODO: Add Automation model in future schema revision
+export interface AutomationWithConfig {
   id: string
-  userId: string
-  name: string | null
-  email: string | null
-  phone: string | null
-  address: string | null
-  source: string | null
-  stage: string
-  score: number | null
-  intent: string | null
-  sentiment: string | null
-  metadata: unknown
+  name: string
+  trigger: string
+  action: string
+  template: string
+  enabled: boolean
+  agentId: string
+  config: AutomationConfig
   createdAt: Date
   updatedAt: Date
-  // Extended fields
-  lastEventAt: Date | null
-  lastIntent: string | null
-  lastScore: number | null
-  lastSentiment: string | null
-  events: Array<{
-    id: string
-    type: string
-    content: string | null
-    createdAt: Date
-    metadata: unknown
-    payload: unknown
-    leadId: string
-  }>
-  project?: { id: string } | null
-  // Solar fields
-  solarEnriched?: boolean | null
-  siteSuitability?: string | null
-  estimatedSavings?: number | null
-  solarEnrichedAt?: Date | null
 }
 
-// AI Reply Types
-export type AITone = 'default' | 'shorter' | 'formal' | 'casual'
-export type AIChannel = 'email' | 'sms'
-
-export interface AIReplyDraft {
-  channel: AIChannel
-  body: string
-  tone: AITone
+// Billing / Subscription Types
+export interface PlanConfig {
+  id: string
+  name: string
+  priceMonthly: number
+  features: string[]
+  stripePriceId?: string
 }
 
-// Automation Config Types
-export interface AutomationConditions {
-  minScore?: number
-  maxScore?: number
-  intentIn?: AIIntent[]
-  stageIn?: LeadStage[]
-  siteSuitabilityIn?: SiteSuitability[]
-  solarEnriched?: boolean
-}
+// RBAC Types (Contract v1.0 uses lowercase string roles)
+export type AgentRole = 'admin' | 'sales' | 'scheduler' | 'installer'
 
-export interface AutomationActions {
-  enrichSolar?: boolean
-  notifyOnViable?: boolean
-}
-
-export interface AutomationConfig {
-  channel?: AIChannel
-  delayMinutes?: number
-  conditions?: AutomationConditions
-  actions?: AutomationActions
-}
-
-export interface AutomationWithConfig extends Omit<Automation, 'config'> {
-  config: AutomationConfig
-}
+// Legacy type alias for backward compatibility during migration
+export type UserRole = 'ADMIN' | 'SCHEDULER' | 'SALES' | 'INSTALLER'

@@ -1,28 +1,56 @@
 // DOMAIN: Projects - Initialize Project For Lead
-// Pure business logic
+// Pure business logic - NO DB, NO API, NO side effects
 
-export interface Project {
-  id: string;
+export type ProjectStatus = 
+  | 'engineering'
+  | 'permitting'
+  | 'scheduled'
+  | 'installation'
+  | 'inspection'
+  | 'pto';
+
+export type MilestoneKey =
+  | 'CLOSE'
+  | 'SITE_SURVEY'
+  | 'PERMIT_APPROVAL'
+  | 'INSTALL_COMPLETE'
+  | 'PTO';
+
+export interface Milestone {
+  key: MilestoneKey;
+  label: string;
+  order: number;
+  commissionUnlockKey: MilestoneKey;
+}
+
+export interface ProjectTemplate {
   leadId: string;
   agentId: string;
-  status: 'engineering' | 'permitting' | 'scheduled' | 'installation' | 'inspection' | 'pto';
-  createdAt: Date;
+  initialStatus: ProjectStatus;
+  milestones: Milestone[];
 }
 
 /**
- * Initialize a project when a lead is closed/won
- * 
- * Creates standard milestones per Master Spec v2.0
+ * Standard milestone definitions per Master Spec v2.0
+ * Each milestone maps to a commission unlock event
  */
-export async function initializeProjectForLead(leadId: string, agentId: string): Promise<Project> {
-  // TODO: Create project in DB
-  // TODO: Create standard milestones
-  
+const STANDARD_MILESTONES: Milestone[] = [
+  { key: 'CLOSE', label: 'Deal Closed', order: 1, commissionUnlockKey: 'CLOSE' },
+  { key: 'SITE_SURVEY', label: 'Site Survey Complete', order: 2, commissionUnlockKey: 'SITE_SURVEY' },
+  { key: 'PERMIT_APPROVAL', label: 'Permit Approved', order: 3, commissionUnlockKey: 'PERMIT_APPROVAL' },
+  { key: 'INSTALL_COMPLETE', label: 'Installation Complete', order: 4, commissionUnlockKey: 'INSTALL_COMPLETE' },
+  { key: 'PTO', label: 'Permission to Operate', order: 5, commissionUnlockKey: 'PTO' },
+];
+
+/**
+ * Initialize a project template for a lead
+ * Pure function - returns data structure, NO side effects
+ */
+export function initializeProjectForLead(leadId: string, agentId: string): ProjectTemplate {
   return {
-    id: `project_${Date.now()}`,
     leadId,
     agentId,
-    status: 'engineering',
-    createdAt: new Date(),
+    initialStatus: 'engineering',
+    milestones: [...STANDARD_MILESTONES],
   };
 }

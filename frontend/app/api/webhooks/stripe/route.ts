@@ -1,5 +1,7 @@
 // PRIMUS HOME PRO - Stripe Webhook Handler
 // Syncs subscription status from Stripe events
+// NOTE: Contract v1.0 does not include billing fields on Agent model.
+// This webhook is a placeholder for future billing integration.
 
 import { headers } from 'next/headers'
 import { NextResponse } from 'next/server'
@@ -39,77 +41,45 @@ export async function POST(req: Request) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session
 
-        if (!session?.metadata?.userId) {
-          console.error('Missing userId in session metadata')
-          return new NextResponse('User ID missing', { status: 400 })
+        if (!session?.metadata?.agentId) {
+          console.error('Missing agentId in session metadata')
+          return new NextResponse('Agent ID missing', { status: 400 })
         }
 
-        // Retrieve subscription details
-        const subscription = await stripe.subscriptions.retrieve(
-          session.subscription as string
-        ) as Stripe.Subscription
-
-        // Get the first subscription item's current_period_end
-        const currentPeriodEnd = subscription.items.data[0]?.current_period_end
-
-        // Update user with subscription info
-        await prisma.user.update({
-          where: { id: session.metadata.userId },
-          data: {
-            stripeCustomer: session.customer as string,
-            subscriptionPlan: session.metadata.planId,
-            subscriptionStatus: subscription.status,
-            subscriptionCurrentEnd: currentPeriodEnd ? new Date(currentPeriodEnd * 1000) : null,
-          },
-        })
-
-        console.log(`✓ Subscription activated for user ${session.metadata.userId}`)
+        // TODO: Store subscription info when billing fields are added to schema
+        // For now, just log the successful checkout
+        console.log(`✓ Checkout completed for agent ${session.metadata.agentId}`)
+        console.log(`  Plan: ${session.metadata.planId}`)
+        console.log(`  Customer: ${session.customer}`)
         break
       }
 
       case 'customer.subscription.updated': {
         const subscription = event.data.object as Stripe.Subscription
-        const userId = subscription.metadata.userId
+        const agentId = subscription.metadata.agentId
 
-        if (!userId) {
-          console.error('Missing userId in subscription metadata')
+        if (!agentId) {
+          console.error('Missing agentId in subscription metadata')
           break
         }
 
-        // Get the first subscription item's current_period_end
-        const currentPeriodEnd = subscription.items.data[0]?.current_period_end
-
-        await prisma.user.update({
-          where: { id: userId },
-          data: {
-            subscriptionStatus: subscription.status,
-            subscriptionCurrentEnd: currentPeriodEnd ? new Date(currentPeriodEnd * 1000) : null,
-          },
-        })
-
-        console.log(`✓ Subscription updated for user ${userId}`)
+        // TODO: Update agent subscription status when billing fields are added
+        console.log(`✓ Subscription updated for agent ${agentId}`)
+        console.log(`  Status: ${subscription.status}`)
         break
       }
 
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription
-        const userId = subscription.metadata.userId
+        const agentId = subscription.metadata.agentId
 
-        if (!userId) {
-          console.error('Missing userId in subscription metadata')
+        if (!agentId) {
+          console.error('Missing agentId in subscription metadata')
           break
         }
 
-        await prisma.user.update({
-          where: { id: userId },
-          data: {
-            subscriptionPlan: 'free',
-            subscriptionStatus: 'canceled',
-            subscriptionCurrentEnd: null,
-          },
-        })
-
-        console.log(`✓ Subscription canceled for user ${userId}`)
+        // TODO: Handle subscription cancellation when billing fields are added
+        console.log(`✓ Subscription canceled for agent ${agentId}`)
         break
       }
 

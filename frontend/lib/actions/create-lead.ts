@@ -1,23 +1,17 @@
 // PRIMUS HOME PRO - Server Action: Create Lead
-// Handles lead creation from landing page forms
-// Includes solar site suitability enrichment for addresses
+// Handles lead creation from landing page forms (Contract v1.0 Aligned)
 
 'use server'
 
 import { prisma } from '@/lib/db/prisma'
 import { leadCaptureSchema } from '@/lib/validations/lead'
-import { analyzeMessage } from '@/lib/ai/service'
 import { runAutomations } from '@/lib/automations/engine'
-import { enrichLeadWithSolarData, isSolarApiConfigured } from '@/lib/solar/solar-api-service'
 import type { ActionResponse, Lead } from '@/types'
 import { auth } from '@clerk/nextjs/server'
 
 /**
  * Create a new lead from a landing page form submission
- * - Validates input
- * - AI analysis for intent/sentiment/score
- * - Creates lead + event records
- * - Returns success/error response
+ * Contract v1.0: Uses Agent model, agentId field, status field
  */
 export async function createLead(
   input: unknown
@@ -26,98 +20,56 @@ export async function createLead(
     // Validate input
     const validatedData = leadCaptureSchema.parse(input)
 
-    // For public forms, userId can be null or from a default "system" user
-    // In production, you might want to create leads associated with the business owner
-    // For now, we'll use the authenticated user if available, or create an orphan lead
+    // Get authenticated agent (if available)
     const { userId: clerkUserId } = await auth()
 
-    let userId: string | null = null
+    let agentId: string | null = null
 
     if (clerkUserId) {
-      // Find user by Clerk ID
-      const user = await prisma.user.findUnique({
+      // Contract v1.0: Find Agent by Clerk ID
+      const agent = await prisma.agent.findUnique({
         where: { clerkId: clerkUserId },
       })
-      userId = user?.id || null
+      agentId = agent?.id || null
     }
 
-    // If no authenticated user and no system user, we need to handle this
-    // For MVP, we'll require at least one user in the database
-    if (!userId) {
-      // Try to find the first user (business owner) or create a system user
-      const systemUser = await prisma.user.findFirst()
+    // If no authenticated agent, try to find a default agent
+    if (!agentId) {
+      const defaultAgent = await prisma.agent.findFirst({
+        where: { role: 'admin' },
+      })
 
-      if (!systemUser) {
-        return {
-          success: false,
-          error: 'No user found. Please set up your account first.',
+      if (!defaultAgent) {
+        // Create a system agent if none exists
+        const systemAgent = await prisma.agent.findFirst()
+        if (!systemAgent) {
+          return {
+            success: false,
+            error: 'No agent found. Please set up your account first.',
+          }
         }
+        agentId = systemAgent.id
+      } else {
+        agentId = defaultAgent.id
       }
-
-      userId = systemUser.id
     }
 
-    // Prepare analysis context
-    const analysisContext = {
-      name: validatedData.name,
-    }
-
-    // Analyze the message or use a default
-    const messageToAnalyze = validatedData.message ||
-      `New lead: ${validatedData.name || 'Unknown'} - ${validatedData.email || validatedData.phone || 'No contact'}`
-
-    const analysis = await analyzeMessage(messageToAnalyze, analysisContext)
-
-    // Create lead in database
+    // Contract v1.0: Create lead with approved fields only
     const lead = await prisma.lead.create({
       data: {
-        userId,
+        agentId,
         name: validatedData.name || null,
         email: validatedData.email || null,
         phone: validatedData.phone || null,
         address: validatedData.address || null,
         source: validatedData.source,
-        score: analysis.score,
-        intent: analysis.intent,
-        sentiment: analysis.sentiment,
-        metadata: validatedData.metadata as any,
-        events: {
-          create: [
-            {
-              type: 'FORM_SUBMIT',
-              content: validatedData.message || 'Lead captured from landing page',
-              metadata: {
-                source: validatedData.source,
-                rawInput: validatedData,
-              } as any,
-            },
-            {
-              type: 'AI_ANALYSIS',
-              content: analysis.summary,
-              metadata: analysis as any,
-            },
-          ],
-        },
+        status: 'new', // Contract v1.0: lowercase status
       },
     })
 
-    console.log('✓ Lead created:', lead.id, '| Score:', lead.score, '| Intent:', lead.intent)
-
-    // Solar Site Suitability Enrichment (async, non-blocking)
-    // If address is provided and Solar API is configured, enrich with solar data
-    if (validatedData.address && isSolarApiConfigured()) {
-      console.log('🌞 Starting solar enrichment for lead:', lead.id)
-      
-      // Fire and forget - solar enrichment will run in background
-      enrichLeadWithSolarData(lead.id, validatedData.address).then((result) => {
-        console.log('🌞 Solar enrichment result:', result.siteSuitability, '| Panels:', result.maxPanelsCount)
-      }).catch((error) => {
-        console.error('🌞 Solar enrichment error:', error)
-      })
-    }
+    console.log('✓ Lead created:', lead.id)
 
     // Trigger automations asynchronously (don't block response)
-    // Fire and forget - automations will run in background
     runAutomations({
       leadId: lead.id,
       trigger: 'lead.created',

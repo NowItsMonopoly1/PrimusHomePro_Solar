@@ -1,10 +1,10 @@
 'use client'
 
-// PRIMUS HOME PRO - Automation Editor
+// PRIMUS HOME PRO - Automation Editor (Contract v1.0 Aligned)
 // Drawer for editing automation settings, conditions, and templates
 
 import { useState, useTransition } from 'react'
-import type { AutomationWithConfig, AutomationConfig, AIChannel, AIIntent, LeadStage } from '@/types'
+import type { AutomationWithConfig, AutomationConfig, AIChannel, AIIntent, LeadStatus } from '@/types'
 import { updateAutomation } from '@/lib/actions/automations-ui'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -22,18 +22,18 @@ export function AutomationEditor({ automation, onClose, onSaved }: AutomationEdi
   const config = automation.config || {}
   const [name, setName] = useState(automation.name)
   const [template, setTemplate] = useState(automation.template)
-  const [channel, setChannel] = useState<AIChannel>(config.channel || 'email')
-  const [delayMinutes, setDelayMinutes] = useState(config.delayMinutes || 0)
+  const [channel, setChannel] = useState<AIChannel>((config.channel as AIChannel) || 'email')
+  const [delayMinutes, setDelayMinutes] = useState<number>(typeof config.delayMinutes === 'number' ? config.delayMinutes : 0)
 
-  // Conditions
+  // Conditions - Contract v1.0 uses statusIn not stageIn
   const [minScore, setMinScore] = useState(config.conditions?.minScore ?? 0)
   const [maxScore, setMaxScore] = useState(config.conditions?.maxScore ?? 100)
-  const [intentIn, setIntentIn] = useState<AIIntent[]>(config.conditions?.intentIn || [])
-  const [stageIn, setStageIn] = useState<LeadStage[]>(config.conditions?.stageIn || [])
+  const [intentIn, setIntentIn] = useState<AIIntent[]>((config.conditions?.intentIn as AIIntent[]) || [])
+  const [statusIn, setStatusIn] = useState<LeadStatus[]>((config.conditions?.statusIn as LeadStatus[]) || [])
 
-  // Available options
+  // Available options - Contract v1.0 status values (lowercase)
   const intents: AIIntent[] = ['Booking', 'Info', 'Pricing', 'Support', 'Spam']
-  const stages: LeadStage[] = ['New', 'Contacted', 'Qualified', 'Closed', 'Lost']
+  const statuses: LeadStatus[] = ['new', 'qualified', 'disqualified', 'proposed', 'sold']
 
   function handleSave() {
     startTransition(async () => {
@@ -44,11 +44,11 @@ export function AutomationEditor({ automation, onClose, onSaved }: AutomationEdi
           minScore,
           maxScore,
           intentIn: intentIn.length > 0 ? intentIn : undefined,
-          stageIn: stageIn.length > 0 ? stageIn : undefined,
+          statusIn: statusIn.length > 0 ? statusIn : undefined,
         },
       }
 
-      const result = await updateAutomation(automation.id, automation.userId, {
+      const result = await updateAutomation(automation.id, automation.agentId, {
         name,
         template,
         config: newConfig,
@@ -67,9 +67,9 @@ export function AutomationEditor({ automation, onClose, onSaved }: AutomationEdi
     )
   }
 
-  function toggleStage(stage: LeadStage) {
-    setStageIn((prev) =>
-      prev.includes(stage) ? prev.filter((s) => s !== stage) : [...prev, stage]
+  function toggleStatus(status: LeadStatus) {
+    setStatusIn((prev) =>
+      prev.includes(status) ? prev.filter((s) => s !== status) : [...prev, status]
     )
   }
 
@@ -199,21 +199,21 @@ export function AutomationEditor({ automation, onClose, onSaved }: AutomationEdi
             </div>
           </div>
 
-          {/* Stage Filters */}
+          {/* Status Filters - Contract v1.0 */}
           <div className="mb-4">
             <label className="mb-2 block text-sm font-medium">
-              Stage Filters <span className="text-xs text-muted-foreground">(optional)</span>
+              Status Filters <span className="text-xs text-muted-foreground">(optional)</span>
             </label>
             <div className="flex flex-wrap gap-2">
-              {stages.map((stage) => (
+              {statuses.map((status) => (
                 <Button
-                  key={stage}
-                  variant={stageIn.includes(stage) ? 'default' : 'outline'}
+                  key={status}
+                  variant={statusIn.includes(status) ? 'default' : 'outline'}
                   size="sm"
-                  onClick={() => toggleStage(stage)}
+                  onClick={() => toggleStatus(status)}
                   disabled={isPending}
                 >
-                  {stage}
+                  {status}
                 </Button>
               ))}
             </div>

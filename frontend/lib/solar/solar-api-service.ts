@@ -315,6 +315,7 @@ export function calculateSystemSizeKW(
 /**
  * Enrich a lead with solar site suitability data
  * Called automatically when a new lead is created with an address
+ * Contract v1.0: Uses SolarQualification model
  */
 export async function enrichLeadWithSolarData(
   leadId: string,
@@ -345,73 +346,56 @@ export async function enrichLeadWithSolarData(
     const annualKwhProduction = bestConfig?.yearlyEnergyDcKwh || 0
     const systemSizeKW = calculateSystemSizeKW(bestConfig?.panelsCount || maxPanelsCount)
     
-    // Get primary roof segment for pitch
-    const primarySegment = insights.solarPotential?.roofSegmentStats?.[0]
-    const roofPitch = primarySegment?.pitchDegrees || null
+    // Get roof area and shading info
+    const roofAreaSqM = insights.solarPotential?.wholeRoofStats?.areaMeters2 || 0
+    const usableArea = insights.solarPotential?.maxArrayAreaMeters2 || 0
+    const shadingPercent = roofAreaSqM > 0 ? ((roofAreaSqM - usableArea) / roofAreaSqM) * 100 : 100
 
-    // Extract financial data if available
-    const financialAnalysis = insights.solarPotential?.financialAnalyses?.[0]
-    const estimatedSavingsYear = financialAnalysis?.cashPurchaseSavings?.savings?.savingsYear1
-      ? parseFloat(financialAnalysis.cashPurchaseSavings.savings.savingsYear1.units)
-      : null
-    const paybackYears = financialAnalysis?.cashPurchaseSavings?.paybackYears || null
-    const estimatedCostUsd = financialAnalysis?.cashPurchaseSavings?.outOfPocketCost
-      ? parseFloat(financialAnalysis.cashPurchaseSavings.outOfPocketCost.units)
-      : null
+    // Calculate solar score (0-100)
+    const roofViable = siteSuitability === 'VIABLE'
+    const solarScore = calculateSolarScore(insights, siteSuitability)
+    
+    // Determine confidence level
+    const confidence = insights.imageryQuality === 'HIGH' ? 'high' : 
+                       insights.imageryQuality === 'MEDIUM' ? 'medium' : 'low'
 
-    // Update lead with solar data
-    await prisma.lead.update({
-      where: { id: leadId },
-      data: {
-        roofPitch,
-        maxPanelsCount,
-        maxSunshineHoursYear,
-        annualKwhProduction,
-        carbonOffsetKg: (annualKwhProduction * (insights.solarPotential?.carbonOffsetFactorKgPerMwh || 0)) / 1000,
-        siteSuitability,
-        solarEnriched: true,
-        solarEnrichedAt: new Date(),
+    // Contract v1.0: Create SolarQualification record (upsert to handle re-runs)
+    await prisma.solarQualification.upsert({
+      where: { leadId },
+      create: {
+        leadId,
+        roofAreaSqM,
+        sunshineHoursYear: maxSunshineHoursYear,
+        shadingPercent,
+        roofViable,
+        solarScore,
+        confidence,
+        rawApiData: insights as unknown as object,
+      },
+      update: {
+        roofAreaSqM,
+        sunshineHoursYear: maxSunshineHoursYear,
+        shadingPercent,
+        roofViable,
+        solarScore,
+        confidence,
+        rawApiData: insights as unknown as object,
       },
     })
 
-    // Create detailed SiteSurvey record
-    await prisma.siteSurvey.create({
+    // Contract v1.0: Log automation event (no LeadEvent model)
+    await prisma.automationEvent.create({
       data: {
         leadId,
-        latitude: insights.center?.latitude,
-        longitude: insights.center?.longitude,
-        imageryDate: insights.imageryDate 
-          ? new Date(insights.imageryDate.year, insights.imageryDate.month - 1, insights.imageryDate.day)
-          : null,
-        imageryQuality: insights.imageryQuality,
-        roofSegmentCount: insights.solarPotential?.roofSegmentStats?.length || 0,
-        totalRoofAreaSqM: insights.solarPotential?.wholeRoofStats?.areaMeters2 || null,
-        usableRoofAreaSqM: insights.solarPotential?.maxArrayAreaMeters2 || null,
-        azimuthDegrees: primarySegment?.azimuthDegrees || null,
-        systemSizeKW,
-        panelCapacityW: DEFAULT_PANEL_CAPACITY_W,
-        recommendedPanels: bestConfig?.panelsCount || maxPanelsCount,
-        estimatedCostUsd,
-        estimatedSavingsYear,
-        paybackYears,
-        buildingInsightsJson: insights as unknown as object,
-        moduleLayoutJson: (bestConfig?.roofSegmentSummaries || []) as object,
-        financialAnalysisJson: (financialAnalysis || {}) as object,
-        apiVersion: 'v1',
-      },
-    })
-
-    // Create lead event for tracking
-    await prisma.leadEvent.create({
-      data: {
-        leadId,
-        type: 'SOLAR_ANALYSIS',
-        content: `Solar site analysis complete: ${siteSuitability}. Max ${maxPanelsCount} panels, ${systemSizeKW.toFixed(1)}kW system potential.`,
+        eventType: 'solar_analysis_complete',
+        triggeredAt: new Date(),
+        handled: false,
         metadata: {
           siteSuitability,
           maxPanelsCount,
           systemSizeKW,
-          sunshineHoursYear: maxSunshineHoursYear,
+          solarScore,
+          roofViable,
         },
       },
     })
@@ -426,19 +410,19 @@ export async function enrichLeadWithSolarData(
       maxSunshineHoursYear,
       annualKwhProduction,
       systemSizeKW,
-      estimatedSavingsYear: estimatedSavingsYear || undefined,
     }
   } catch (error) {
     console.error(`[SolarEnrichment] Error enriching lead ${leadId}:`, error)
     
-    // Mark lead as attempted but failed
-    await prisma.lead.update({
-      where: { id: leadId },
+    // Log failed attempt
+    await prisma.automationEvent.create({
       data: {
-        siteSuitability: 'NOT_VIABLE',
-        solarEnriched: false,
+        leadId,
+        eventType: 'solar_analysis_failed',
+        triggeredAt: new Date(),
+        handled: false,
         metadata: {
-          solarEnrichmentError: error instanceof Error ? error.message : 'Unknown error',
+          error: error instanceof Error ? error.message : 'Unknown error',
         },
       },
     }).catch(() => {})
@@ -450,6 +434,35 @@ export async function enrichLeadWithSolarData(
       error: error instanceof Error ? error.message : 'Unknown error',
     }
   }
+}
+
+/**
+ * Calculate a 0-100 solar score from insights
+ */
+type SiteSuitability = 'VIABLE' | 'CHALLENGING' | 'NOT_VIABLE'
+
+function calculateSolarScore(
+  insights: SolarBuildingInsights,
+  siteSuitability: SiteSuitability
+): number {
+  // Base score from suitability
+  const baseScores: Record<SiteSuitability, number> = {
+    'VIABLE': 85,
+    'CHALLENGING': 50,
+    'NOT_VIABLE': 20,
+  }
+  let score = baseScores[siteSuitability]
+
+  // Adjust based on sunshine hours
+  const sunshineHours = insights.solarPotential?.maxSunshineHoursPerYear || 0
+  if (sunshineHours > 1500) score = Math.min(100, score + 5)
+  if (sunshineHours < 1200) score = Math.max(0, score - 5)
+
+  // Adjust based on imagery quality
+  if (insights.imageryQuality === 'HIGH') score = Math.min(100, score + 3)
+  if (insights.imageryQuality === 'LOW') score = Math.max(0, score - 10)
+
+  return Math.round(score)
 }
 
 // ============================================================================

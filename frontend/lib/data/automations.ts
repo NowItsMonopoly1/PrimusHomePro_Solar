@@ -1,41 +1,85 @@
-// PRIMUS HOME PRO - Data Layer: Automations
-// Server-side queries for automation management
+// PRIMUS HOME PRO - Automations Data Layer (Contract v1.0 Stub)
+// NOTE: Contract v1.0 does NOT include Automation model
+// This is a placeholder for future implementation
 
 import { prisma } from '@/lib/db/prisma'
-import type { AutomationWithConfig, Automation } from '@/types'
+import type { AutomationConfig, AutomationWithConfig } from '@/types'
+
+// Placeholder automation type - matches AutomationWithConfig from types
+export type AutomationStub = AutomationWithConfig
 
 /**
- * Get all automations for a user with typed config
+ * Get automations for agent (stub)
+ * Contract v1.0: No Automation model yet
  */
-export async function getAutomationsForUser(
-  userId: string
-): Promise<AutomationWithConfig[]> {
-  const automations = await prisma.automation.findMany({
-    where: { userId },
-    orderBy: { createdAt: 'asc' },
-  })
-
-  return automations.map((automation) => ({
-    ...automation,
-    config: (automation.config as any) || {},
-  })) as AutomationWithConfig[]
+export async function getAgentAutomations(_agentId: string): Promise<AutomationWithConfig[]> {
+  // Return empty array - no Automation model in Contract v1.0
+  console.log('[DATA] getAgentAutomations called (stub)')
+  return []
 }
 
 /**
- * Get single automation by ID
+ * Alias for backward compatibility with pages using old name
  */
-export async function getAutomationById(
-  id: string,
-  userId: string
+export async function getAutomationsForUser(_clerkUserId: string): Promise<AutomationWithConfig[]> {
+  console.log('[DATA] getAutomationsForUser called (stub)')
+  return []
+}
+
+/**
+ * Get automation by ID (stub)
+ */
+export async function getAutomationById(_id: string): Promise<AutomationWithConfig | null> {
+  console.log('[DATA] getAutomationById called (stub)')
+  return null
+}
+
+/**
+ * Create automation (stub)
+ */
+export async function createAutomation(
+  _agentId: string,
+  _data: Partial<AutomationWithConfig>
 ): Promise<AutomationWithConfig | null> {
-  const automation = await prisma.automation.findUnique({
-    where: { id, userId },
+  console.log('[DATA] createAutomation called (stub)')
+  return null
+}
+
+/**
+ * Update automation (stub)
+ */
+export async function updateAutomation(
+  _id: string,
+  _data: Partial<AutomationStub>
+): Promise<AutomationStub | null> {
+  console.log('[DATA] updateAutomation called (stub)')
+  return null
+}
+
+/**
+ * Delete automation (stub)
+ */
+export async function deleteAutomation(_id: string): Promise<boolean> {
+  console.log('[DATA] deleteAutomation called (stub)')
+  return false
+}
+
+/**
+ * Toggle automation active status (stub)
+ */
+export async function toggleAutomationActive(_id: string): Promise<AutomationStub | null> {
+  console.log('[DATA] toggleAutomationActive called (stub)')
+  return null
+}
+
+/**
+ * Get automation event history for a lead
+ * Uses Contract v1.0 AutomationEvent model
+ */
+export async function getLeadAutomationEvents(leadId: string) {
+  return prisma.automationEvent.findMany({
+    where: { leadId },
+    orderBy: { triggeredAt: 'desc' },
+    take: 50,
   })
-
-  if (!automation) return null
-
-  return {
-    ...automation,
-    config: (automation.config as any) || {},
-  } as AutomationWithConfig
 }

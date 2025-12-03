@@ -1,39 +1,39 @@
 // DOMAIN: Solar - Qualify Lead Roof
-// Pure business logic - determines if a roof is viable for solar
+// Pure business logic - NO DB, NO API, NO side effects
+
+import { computeSolarScore, type RawSolarData } from './compute-solar-score';
 
 export interface SolarQualification {
   leadId: string;
   roofViable: boolean;
-  solarScore: number; // 0-100
-  shadingScore: number; // 0-100 (lower is better)
-  recommendedSystemSizeKw: number | null;
-  confidence: 'high' | 'medium' | 'low';
+  solarScore: number;
+  shadingScore: number;
+  viabilityReason: string;
+  estAnnualProductionKwh: number;
 }
 
 /**
  * Qualify a lead's roof for solar viability
- * 
- * This function receives pre-fetched satellite data from @services/solar
- * and applies business logic to determine viability
- * 
- * Business Rules (per Master Spec v2.0):
- * - Minimum roof area: 20 m²
- * - Minimum panel count: 8 panels
- * - Minimum sunshine: 1000 hrs/year
- * - Shading threshold: < 30% shading
+ * Pure function - receives data, applies business rules, returns result
  */
-export async function qualifyLeadRoof(leadId: string): Promise<SolarQualification> {
-  // TODO: Fetch satellite data via @services/solar
-  // TODO: Apply business rules
-  // TODO: Return qualification result
-  
-  // STUB implementation
+export function qualifyLeadRoof(
+  leadId: string,
+  rawSolarData: RawSolarData
+): SolarQualification {
+  const result = computeSolarScore(rawSolarData);
+  const shadingMultiplier = 1 - Math.min(100, Math.max(0, rawSolarData.shadingPercent)) / 100;
+  const productionFactor = Math.max(0, rawSolarData.irradianceKwhM2) * 0.18; // approx kWh per m² at 18% efficiency
+  const estAnnualProductionKwh = Math.max(
+    0,
+    Math.round(rawSolarData.roofAreaM2 * productionFactor * Math.max(0, shadingMultiplier))
+  );
+
   return {
     leadId,
-    roofViable: true,
-    solarScore: 80,
-    shadingScore: 15,
-    recommendedSystemSizeKw: 8.5,
-    confidence: 'medium',
+    roofViable: result.roofViable,
+    solarScore: result.solarScore,
+    shadingScore: result.shadingScore,
+    viabilityReason: result.viabilityReason,
+    estAnnualProductionKwh,
   };
 }

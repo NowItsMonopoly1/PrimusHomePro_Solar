@@ -2,24 +2,19 @@
 
 import { auth } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/db/prisma';
-// TODO: Import from @prisma/client after running prisma generate
-import type { UserRole } from '@/types/rbac';
+import type { UserRole } from '@/types';
 
 // ============================================================================
-// PRIMUS HOME PRO - Auth Service for Multi-Tenancy & RBAC (Module K)
-// ============================================================================
-// NOTE: Full RBAC enforcement will be active after running:
-//   npx prisma generate
-//   npx prisma migrate dev --name add_multitenancy_rbac
+// PRIMUS HOME PRO - Auth Service (Contract v1.0 Aligned)
+// Uses Agent model instead of User
 // ============================================================================
 
 export interface AuthContext {
-  userId: string;       // Internal Prisma user ID
+  agentId: string;      // Internal Prisma agent ID
   clerkId: string;      // Clerk's user ID
-  companyId: string | null;
-  role: UserRole;
+  role: string;         // Contract v1.0: lowercase role string
   email: string;
-  name: string | null;
+  name: string;
 }
 
 export interface PermissionCheck {
@@ -27,12 +22,12 @@ export interface PermissionCheck {
   reason?: string;
 }
 
-// Role hierarchy for permission checks
-const ROLE_HIERARCHY: Record<UserRole, number> = {
-  ADMIN: 100,
-  SCHEDULER: 50,
-  SALES: 30,
-  INSTALLER: 10,
+// Role hierarchy for permission checks (Contract v1.0: lowercase roles)
+const ROLE_HIERARCHY: Record<string, number> = {
+  admin: 100,
+  scheduler: 50,
+  sales: 30,
+  installer: 10,
 };
 
 // ============================================================================
@@ -40,8 +35,8 @@ const ROLE_HIERARCHY: Record<UserRole, number> = {
 // ============================================================================
 
 /**
- * Get the current authenticated user's full context
- * NOTE: After migration, this will include companyId and role from the database
+ * Get the current authenticated agent's full context
+ * Contract v1.0: Uses Agent model
  */
 export async function getAuthContext(): Promise<AuthContext | null> {
   const { userId: clerkId } = await auth();
@@ -50,47 +45,49 @@ export async function getAuthContext(): Promise<AuthContext | null> {
     return null;
   }
 
-  const user = await prisma.user.findUnique({
+  const agent = await prisma.agent.findUnique({
     where: { clerkId },
   });
 
-  if (!user) {
+  if (!agent) {
     return null;
   }
 
-  // TODO: After migration, use user.companyId and user.role
   return {
-    userId: user.id,
-    clerkId: user.clerkId,
-    companyId: null, // Will be: user.companyId
-    role: 'ADMIN' as UserRole, // Will be: user.role
-    email: user.email,
-    name: user.name,
+    agentId: agent.id,
+    clerkId: agent.clerkId,
+    role: agent.role,
+    email: agent.email,
+    name: agent.name,
   };
 }
 
 /**
- * Get the current user's company ID
+ * Get the current agent's internal database ID
  */
-export async function getCurrentUserCompanyId(): Promise<string | null> {
+export async function getCurrentAgentId(): Promise<string | null> {
   const context = await getAuthContext();
-  return context?.companyId ?? null;
+  return context?.agentId ?? null;
 }
 
-/**
- * Get the current user's role
- */
-export async function getUserRole(): Promise<UserRole> {
-  const context = await getAuthContext();
-  return context?.role ?? 'ADMIN';
-}
-
-/**
- * Get the current user's internal database ID
- */
+// Legacy alias for backward compatibility
 export async function getCurrentUserId(): Promise<string | null> {
+  return getCurrentAgentId();
+}
+
+/**
+ * Get the current agent's role
+ */
+export async function getAgentRole(): Promise<string> {
   const context = await getAuthContext();
-  return context?.userId ?? null;
+  return context?.role ?? 'sales';
+}
+
+// Legacy alias
+export async function getUserRole(): Promise<UserRole> {
+  const role = await getAgentRole();
+  // Convert lowercase to uppercase for legacy compatibility
+  return role.toUpperCase() as UserRole;
 }
 
 // ============================================================================
@@ -98,28 +95,29 @@ export async function getCurrentUserId(): Promise<string | null> {
 // ============================================================================
 
 /**
- * Check if current user has at least the specified role level
+ * Check if current agent has at least the specified role level
  */
-export async function hasMinimumRole(minRole: UserRole): Promise<boolean> {
-  const userRole = await getUserRole();
-  return ROLE_HIERARCHY[userRole] >= ROLE_HIERARCHY[minRole];
+export async function hasMinimumRole(minRole: string): Promise<boolean> {
+  const agentRole = await getAgentRole();
+  const normalizedMinRole = minRole.toLowerCase();
+  return (ROLE_HIERARCHY[agentRole] || 0) >= (ROLE_HIERARCHY[normalizedMinRole] || 0);
 }
 
 /**
- * Check if current user is an admin
+ * Check if current agent is an admin
  */
 export async function isAdmin(): Promise<boolean> {
-  const role = await getUserRole();
-  return role === 'ADMIN';
+  const role = await getAgentRole();
+  return role === 'admin';
 }
 
 /**
- * Check if current user can access billing features
+ * Check if current agent can access billing features
  */
 export async function canAccessBilling(): Promise<PermissionCheck> {
-  const role = await getUserRole();
+  const role = await getAgentRole();
   
-  if (role !== 'ADMIN') {
+  if (role !== 'admin') {
     return {
       allowed: false,
       reason: 'Only administrators can access billing settings',
@@ -130,12 +128,12 @@ export async function canAccessBilling(): Promise<PermissionCheck> {
 }
 
 /**
- * Check if current user can access automations
+ * Check if current agent can access automations
  */
 export async function canAccessAutomations(): Promise<PermissionCheck> {
-  const role = await getUserRole();
+  const role = await getAgentRole();
   
-  if (role !== 'ADMIN') {
+  if (role !== 'admin') {
     return {
       allowed: false,
       reason: 'Only administrators can manage automations',
@@ -146,12 +144,12 @@ export async function canAccessAutomations(): Promise<PermissionCheck> {
 }
 
 /**
- * Check if current user can manage team settings
+ * Check if current agent can manage team settings
  */
 export async function canManageTeam(): Promise<PermissionCheck> {
-  const role = await getUserRole();
+  const role = await getAgentRole();
   
-  if (role !== 'ADMIN') {
+  if (role !== 'admin') {
     return {
       allowed: false,
       reason: 'Only administrators can manage team members',
@@ -162,8 +160,8 @@ export async function canManageTeam(): Promise<PermissionCheck> {
 }
 
 /**
- * Check if current user can view a specific lead
- * TODO: After migration, implement full RBAC with company/assignment checks
+ * Check if current agent can view a specific lead
+ * Contract v1.0: Uses agentId field
  */
 export async function canViewLead(leadId: string): Promise<PermissionCheck> {
   const context = await getAuthContext();
@@ -172,11 +170,11 @@ export async function canViewLead(leadId: string): Promise<PermissionCheck> {
     return { allowed: false, reason: 'Not authenticated' };
   }
 
-  // For now, check lead belongs to user
+  // Check lead belongs to agent
   const lead = await prisma.lead.findFirst({
     where: {
       id: leadId,
-      userId: context.userId,
+      agentId: context.agentId,
     },
   });
   
@@ -186,14 +184,15 @@ export async function canViewLead(leadId: string): Promise<PermissionCheck> {
 }
 
 /**
- * Check if current user can edit a lead
+ * Check if current agent can edit a lead
  */
 export async function canEditLead(leadId: string): Promise<PermissionCheck> {
   return canViewLead(leadId);
 }
 
 /**
- * Check if current user can view a specific project
+ * Check if current agent can view a specific project
+ * Contract v1.0: Project has leadId, check via lead.agentId
  */
 export async function canViewProject(projectId: string): Promise<PermissionCheck> {
   const context = await getAuthContext();
@@ -202,10 +201,13 @@ export async function canViewProject(projectId: string): Promise<PermissionCheck
     return { allowed: false, reason: 'Not authenticated' };
   }
 
+  // Contract v1.0: Project -> Lead -> agentId
   const project = await prisma.project.findFirst({
     where: {
       id: projectId,
-      lead: { userId: context.userId },
+      lead: {
+        agentId: context.agentId,
+      },
     },
   });
   
@@ -215,7 +217,7 @@ export async function canViewProject(projectId: string): Promise<PermissionCheck
 }
 
 /**
- * Check if current user can update project milestones
+ * Check if current agent can update project milestones
  */
 export async function canUpdateMilestone(projectId: string): Promise<PermissionCheck> {
   return canViewProject(projectId);
@@ -227,7 +229,7 @@ export async function canUpdateMilestone(projectId: string): Promise<PermissionC
 
 /**
  * Build a WHERE clause for querying leads
- * TODO: After migration, implement full RBAC with company/role filtering
+ * Contract v1.0: Uses agentId field
  */
 export async function getLeadWhereClause(): Promise<Record<string, unknown>> {
   const context = await getAuthContext();
@@ -236,12 +238,12 @@ export async function getLeadWhereClause(): Promise<Record<string, unknown>> {
     throw new Error('Not authenticated');
   }
 
-  // For now, filter by userId
-  return { userId: context.userId };
+  return { agentId: context.agentId };
 }
 
 /**
  * Build a WHERE clause for querying projects
+ * Contract v1.0: Project -> Lead -> agentId
  */
 export async function getProjectWhereClause(): Promise<Record<string, unknown>> {
   const context = await getAuthContext();
@@ -250,70 +252,66 @@ export async function getProjectWhereClause(): Promise<Record<string, unknown>> 
     throw new Error('Not authenticated');
   }
 
-  // For now, filter by lead's userId
-  return { lead: { userId: context.userId } };
+  return { lead: { agentId: context.agentId } };
 }
 
 // ============================================================================
-// COMPANY & TEAM MANAGEMENT (Stubs - enabled after migration)
+// TEAM MANAGEMENT (Stubs - for future expansion)
 // ============================================================================
 
 /**
- * Get the current user's company details
+ * Get current company (stub for future implementation)
+ * Contract v1.0: No Company model
  */
-export async function getCurrentCompany() {
-  // TODO: Implement after migration
-  return null;
+export async function getCurrentCompany(): Promise<null> {
+  console.log('[AUTH] getCurrentCompany called (stub - no Company model)')
+  return null
 }
 
 /**
- * Get team members for the current company
+ * Get team members (stub for future implementation)
  */
 export async function getTeamMembers() {
-  // TODO: Implement after migration
+  // Contract v1.0: No Company model - single-agent for MVP
   return [];
 }
 
 /**
- * Invite a new team member
+ * Invite a new team member (stub)
  */
 export async function inviteTeamMember(
   email: string,
-  role: UserRole
+  role: string
 ): Promise<{ success: boolean; invitationId?: string; error?: string }> {
-  // TODO: Implement after migration
   return { 
     success: false, 
-    error: 'Team management will be available after the multi-tenancy migration.' 
+    error: 'Team management is not available in this version.' 
   };
 }
 
 /**
- * Accept a team invitation
+ * Accept a team invitation (stub)
  */
 export async function acceptInvitation(token: string): Promise<{ success: boolean; error?: string }> {
-  // TODO: Implement after migration
-  return { success: false, error: 'Team invitations will be available after migration.' };
+  return { success: false, error: 'Team invitations are not available in this version.' };
 }
 
 /**
- * Update a team member's role
+ * Update a team member's role (stub)
  */
 export async function updateTeamMemberRole(
   memberId: string,
-  newRole: UserRole
+  newRole: string
 ): Promise<{ success: boolean; error?: string }> {
-  // TODO: Implement after migration
-  return { success: false, error: 'Team management will be available after migration.' };
+  return { success: false, error: 'Team management is not available in this version.' };
 }
 
 /**
- * Remove a team member from the company
+ * Remove a team member (stub)
  */
 export async function removeTeamMember(
   memberId: string
 ): Promise<{ success: boolean; error?: string }> {
-  // TODO: Implement after migration
-  return { success: false, error: 'Team management will be available after migration.' };
+  return { success: false, error: 'Team management is not available in this version.' };
 }
 

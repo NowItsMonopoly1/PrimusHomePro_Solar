@@ -1,5 +1,5 @@
 // PRIMUS HOME PRO - Settings Page
-// User account and app configuration
+// Agent account and app configuration (Contract v1.0 Aligned)
 
 export const dynamic = 'force-dynamic'
 
@@ -19,11 +19,12 @@ export default async function SettingsPage() {
     redirect('/sign-in')
   }
 
-  const user = await prisma.user.findUnique({
+  // Contract v1.0: Use Agent model
+  const agent = await prisma.agent.findUnique({
     where: { clerkId: clerkUserId },
   })
 
-  if (!user) {
+  if (!agent) {
     redirect('/sign-in')
   }
 
@@ -51,11 +52,21 @@ export default async function SettingsPage() {
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <label className="text-sm font-medium">Name</label>
-              <Input defaultValue={user.name || ''} placeholder="Your name" disabled />
+              <Input defaultValue={agent.name || ''} placeholder="Your name" disabled />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Email</label>
-              <Input defaultValue={user.email} type="email" disabled />
+              <Input defaultValue={agent.email} type="email" disabled />
+            </div>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Phone</label>
+              <Input defaultValue={agent.phone || ''} placeholder="Your phone" disabled />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Role</label>
+              <Input defaultValue={agent.role} disabled />
             </div>
           </div>
           <p className="text-xs text-muted-foreground">
@@ -214,11 +225,9 @@ export default async function SettingsPage() {
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between rounded-lg bg-muted/50 p-4">
             <div>
-              <p className="font-medium capitalize">{user.subscriptionPlan || 'Free'} Plan</p>
+              <p className="font-medium capitalize">Free Plan</p>
               <p className="text-sm text-muted-foreground">
-                {user.subscriptionStatus === 'active'
-                  ? `Active until ${user.subscriptionCurrentEnd?.toLocaleDateString()}`
-                  : 'No active subscription'}
+                No active subscription - Contact support to upgrade
               </p>
             </div>
             <Link href="/dashboard/billing">

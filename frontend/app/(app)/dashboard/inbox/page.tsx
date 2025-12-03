@@ -1,5 +1,5 @@
 // PRIMUS HOME PRO - Inbox Page
-// Message center for lead communications
+// Message center for lead communications (Contract v1.0 Aligned)
 
 export const dynamic = 'force-dynamic'
 
@@ -11,12 +11,13 @@ import { Button } from '@/components/ui/button'
 import { Inbox, Mail, MessageSquare, Bell } from 'lucide-react'
 import Link from 'next/link'
 
-// Type for messages with lead included
+// Type for messages with lead included (Contract v1.0)
 type MessageWithLead = {
   id: string;
-  type: string;
-  content: string | null;
-  createdAt: Date;
+  direction: string;
+  channel: string;
+  body: string;
+  sentAt: Date;
   lead: {
     id: string;
     name: string | null;
@@ -31,49 +32,54 @@ export default async function InboxPage() {
     redirect('/sign-in')
   }
 
-  const user = await prisma.user.findUnique({
+  // Contract v1.0: Use Agent model
+  const agent = await prisma.agent.findUnique({
     where: { clerkId: clerkUserId },
   })
 
-  if (!user) {
+  if (!agent) {
     redirect('/sign-in')
   }
 
-  // Get recent lead events that are messages
-  const recentMessages = await prisma.leadEvent.findMany({
+  // Contract v1.0: Get recent messages (Message model instead of LeadEvent)
+  const recentMessages = await prisma.message.findMany({
     where: {
       lead: {
-        userId: user.id,
+        agentId: agent.id,
       },
-      type: {
-        in: ['EMAIL_RECEIVED', 'SMS_RECEIVED', 'FORM_SUBMIT'],
-      },
+      direction: 'inbound',
     },
     include: {
-      lead: true,
+      lead: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
     },
     orderBy: {
-      createdAt: 'desc',
+      sentAt: 'desc',
     },
     take: 20,
   })
 
-  // Calculate stats
+  // Calculate stats by channel
   let emailCount = 0;
   let smsCount = 0;
-  let formCount = 0;
+  let callCount = 0;
   
   for (const msg of recentMessages) {
-    if (msg.type === 'EMAIL_RECEIVED') emailCount++;
-    else if (msg.type === 'SMS_RECEIVED') smsCount++;
-    else if (msg.type === 'FORM_SUBMIT') formCount++;
+    if (msg.channel === 'email') emailCount++;
+    else if (msg.channel === 'sms') smsCount++;
+    else if (msg.channel === 'call') callCount++;
   }
 
   const stats = {
     unread: recentMessages.length,
     emails: emailCount,
     sms: smsCount,
-    forms: formCount,
+    calls: callCount,
   }
 
   return (
@@ -124,12 +130,12 @@ export default async function InboxPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Form Submissions</CardTitle>
+            <CardTitle className="text-sm font-medium">Calls</CardTitle>
             <Bell className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.forms}</div>
-            <p className="text-xs text-muted-foreground">New leads</p>
+            <div className="text-2xl font-bold">{stats.calls}</div>
+            <p className="text-xs text-muted-foreground">Received</p>
           </CardContent>
         </Card>
       </div>
@@ -162,13 +168,13 @@ export default async function InboxPage() {
                   className="flex items-start gap-4 rounded-lg border border-border p-4 transition-colors hover:bg-muted/50"
                 >
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
-                    {message.type === 'EMAIL_RECEIVED' && (
+                    {message.channel === 'email' && (
                       <Mail className="h-5 w-5 text-primary" />
                     )}
-                    {message.type === 'SMS_RECEIVED' && (
+                    {message.channel === 'sms' && (
                       <MessageSquare className="h-5 w-5 text-primary" />
                     )}
-                    {message.type === 'FORM_SUBMIT' && (
+                    {message.channel === 'call' && (
                       <Bell className="h-5 w-5 text-primary" />
                     )}
                   </div>
@@ -178,15 +184,15 @@ export default async function InboxPage() {
                         {message.lead.name || message.lead.email || 'Unknown Lead'}
                       </p>
                       <span className="text-xs text-muted-foreground">
-                        {new Date(message.createdAt).toLocaleDateString()}
+                        {new Date(message.sentAt).toLocaleDateString()}
                       </span>
                     </div>
                     <p className="text-sm text-muted-foreground line-clamp-2">
-                      {message.content || 'No content'}
+                      {message.body || 'No content'}
                     </p>
                     <div className="flex items-center gap-2">
                       <span className="inline-flex items-center rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">
-                        {message.type.replace('_', ' ')}
+                        {message.channel.toUpperCase()}
                       </span>
                       <Link
                         href={`/dashboard/leads`}

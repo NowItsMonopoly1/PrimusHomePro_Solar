@@ -1,42 +1,62 @@
 // DOMAIN: Solar - Compute Solar Score
-// Pure business logic - scoring algorithm
+// Pure business logic - NO DB, NO API, NO side effects
 
-export interface SolarScoreInput {
-  roofAreaSqM: number;
-  sunshineHoursYear: number;
+export interface RawSolarData {
+  roofAreaM2: number;
+  irradianceKwhM2: number;
   shadingPercent: number;
-  roofPitchDegrees: number;
-  azimuthDegrees: number; // 180 = due south (optimal)
+}
+
+export interface SolarScoreResult {
+  solarScore: number;       // 0-100
+  shadingScore: number;     // 0-100
+  roofViable: boolean;
+  viabilityReason: string;
 }
 
 /**
  * Compute solar viability score (0-100)
- * 
- * Scoring factors:
- * - Roof area (30%)
- * - Sunshine hours (30%)
- * - Shading (20%)
- * - Roof orientation (20%)
+ * Pure function - deterministic business logic only
  */
-export function computeSolarScore(input: SolarScoreInput): number {
-  // Area score: 20m² = 0, 100m² = 100
-  const areaScore = Math.min(100, (input.roofAreaSqM / 100) * 100);
+export function computeSolarScore(data: RawSolarData): SolarScoreResult {
+  // Rule: Minimum roof area is 20 m²
+  if (data.roofAreaM2 < 20) {
+    return {
+      solarScore: 0,
+      shadingScore: 100 - data.shadingPercent,
+      roofViable: false,
+      viabilityReason: 'Insufficient roof area (minimum 20 m²)',
+    };
+  }
+
+  // Calculate shading score (inverse of shading percent)
+  const shadingScore = Math.max(0, Math.min(100, 100 - data.shadingPercent));
+
+  // Weighted solar score formula
+  // Area (40%) + Irradiance (40%) + Shading (20%)
+  const normalizedArea = Math.min(100, (data.roofAreaM2 / 100) * 100);
+  const normalizedIrradiance = Math.min(100, (data.irradianceKwhM2 / 2000) * 100);
   
-  // Sunshine score: 1000hrs = 0, 2000hrs = 100
-  const sunshineScore = Math.min(100, ((input.sunshineHoursYear - 1000) / 1000) * 100);
-  
-  // Shading score: 0% = 100, 50% = 0
-  const shadingScore = Math.max(0, 100 - (input.shadingPercent * 2));
-  
-  // Orientation score: 180° (south) = 100, 90°/270° = 50, 0°/360° (north) = 0
-  const orientationDelta = Math.abs(input.azimuthDegrees - 180);
-  const orientationScore = Math.max(0, 100 - (orientationDelta / 1.8));
-  
-  const totalScore = 
-    areaScore * 0.3 +
-    sunshineScore * 0.3 +
-    shadingScore * 0.2 +
-    orientationScore * 0.2;
-  
-  return Math.round(totalScore);
+  const rawScore = 
+    normalizedArea * 0.4 +
+    normalizedIrradiance * 0.4 +
+    shadingScore * 0.2;
+
+  const solarScore = Math.round(Math.max(0, Math.min(100, rawScore)));
+
+  // Viability rules: area >= 20, score >= 30, shading <= 50%
+  const roofViable = 
+    data.roofAreaM2 >= 20 &&
+    solarScore >= 30 &&
+    data.shadingPercent <= 50;
+
+  const viabilityReason = !roofViable
+    ? data.shadingPercent > 50
+      ? 'Excessive shading (maximum 50%)'
+      : solarScore < 30
+        ? 'Solar score too low (minimum 30)'
+        : 'Insufficient roof area'
+    : 'Roof meets all viability criteria';
+
+  return { solarScore, shadingScore, roofViable, viabilityReason };
 }
